@@ -8,6 +8,8 @@ BASE = "#4f7cac"
 SELECTED = "#e07a2f"
 BAR_HEIGHT = 28
 DIMMED_OPACITY = 0.35
+# Charts are for reading and clicking only: no pan, zoom, drag handles or toolbar.
+STATIC_CHART_CONFIG = {"displayModeBar": False, "scrollZoom": False, "doubleClick": False, "showAxisDragHandles": False}
 PIE_COLOURS = (
     "#4f7cac", "#e07a2f", "#59a14f", "#b07aa1", "#edc948",
     "#76b7b2", "#ff9da7", "#9c755f", "#bab0ac", "#e15759",
@@ -30,23 +32,26 @@ def breakdown_figure(
     rows = with_selected(rows, selected)
     labels = [label for label, _ in rows]
     values = [n for _, n in rows]
-    colors = [SELECTED if label in selected else BASE for label in labels]
-    # With a selection, unselected bars are dimmed so the selected ones stand out (FR-006g).
-    opacities = [1.0 if label in selected or not selected else DIMMED_OPACITY for label in labels]
+    # With a selection, unselected bars are dimmed so the selected ones stand out (FR-006g). The
+    # dimming is in the colour's alpha: a per-bar marker.opacity array stops Plotly from reporting clicks.
+    colors = [
+        _rgba(SELECTED if label in selected else BASE, 1.0 if label in selected or not selected else DIMMED_OPACITY)
+        for label in labels
+    ]
     fig = go.Figure(
         go.Bar(
             x=values,
             y=labels,
             orientation="h",
-            marker=dict(color=colors, opacity=opacities),
+            marker=dict(color=colors),
             text=values,
             textposition="outside",
             cliponaxis=False,
             hovertemplate="%{y}: %{x} APIs<extra></extra>",
         )
     )
-    fig.update_yaxes(autorange="reversed", automargin=True)
-    fig.update_xaxes(showgrid=False, visible=False)
+    fig.update_yaxes(autorange="reversed", automargin=True, fixedrange=True)
+    fig.update_xaxes(showgrid=False, visible=False, fixedrange=True)
     fig.update_layout(
         title=dict(text=title, x=0),
         height=height or max(160, BAR_HEIGHT * len(rows) + 90),

@@ -127,14 +127,77 @@ def test_chips_toggle_and_highlight_selected_categories(page):
 
 
 def test_selecting_dims_the_unselected_bars(page):
-    page.locator("[data-testid=stPlotlyChart] .bars .point path").first.wait_for(timeout=15000)
-    page.locator("[data-testid=stPlotlyChart] .bars .point path").first.click(force=True)
+    _bars(page, "global").locator(".bars .point path").first.wait_for(timeout=15000)
+    _click_bar(page, 2, 0)
     page.wait_for_timeout(2500)
     opacities = page.evaluate(
         "[...document.querySelectorAll('[data-testid=stPlotlyChart] .bars .point path')]"
-        ".map(p => getComputedStyle(p).opacity)"
+        ".map(p => getComputedStyle(p).fillOpacity)"
     )
     assert "1" in opacities and any(float(o) < 1 for o in opacities), opacities
+
+
+def _bars(page, n):
+    chart = page.locator("[data-testid=stPlotlyChart]").nth(2 if n == "global" else 3)
+    chart.evaluate("e => e.scrollIntoView({block: 'center'})")  # keep it clear of the sticky bar
+    page.wait_for_timeout(600)
+    return chart
+
+
+def _click_bar(page, chart_index, bar_index):
+    """A real mouse click at the bar's centre (as a user would), not a synthetic element click."""
+    bar = page.locator("[data-testid=stPlotlyChart]").nth(chart_index).locator(".bars .point path").nth(bar_index)
+    box = bar.bounding_box()
+    page.mouse.click(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+
+
+def _bar_chips(page):
+    return page.locator(f"{BAR} button:has-text('\u2715')")
+
+
+def test_bar_charts_cannot_be_moved_and_have_no_toolbar(page):
+    chart = _bars(page, "endpoint")
+    chart.locator(".bars .point path").first.wait_for(timeout=15000)
+    page.wait_for_timeout(800)
+    assert chart.locator(".modebar-btn").count() == 0
+
+    def geometry():
+        # Relative to the chart, so scrolling the page itself does not count as movement.
+        return chart.evaluate(
+            "host => { const c = host.getBoundingClientRect();"
+            " return [...host.querySelectorAll('.bars .point path')].slice(0, 3).map(e => {"
+            " const r = e.getBoundingClientRect(); return [Math.round(r.x - c.x), Math.round(r.y - c.y), Math.round(r.width)]; }); }"
+        )
+
+    before = geometry()
+    box = chart.locator(".nsewdrag").first.bounding_box()
+    cx, cy = box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
+    page.mouse.move(cx, cy)
+    page.mouse.down()
+    page.mouse.move(cx + 150, cy + 60, steps=8)
+    page.mouse.up()
+    page.mouse.wheel(0, -300)
+    page.wait_for_timeout(1500)
+    assert geometry() == before
+
+
+def test_clicking_bars_toggles_and_combines_the_selection(page):
+    chart = _bars(page, "endpoint")
+    points = chart.locator(".bars .point path")
+    points.first.wait_for(timeout=15000)
+    _click_bar(page, 3, 0)
+    _bar_chips(page).first.wait_for(timeout=15000)
+    assert _bar_chips(page).first.inner_text().startswith("Per-endpoint middleware: ")
+    page.wait_for_timeout(1500)
+    _click_bar(page, 3, 1)
+    page.wait_for_timeout(2500)
+    chip = page.locator(f"{BAR} button:has-text('Per-endpoint middleware')").first
+    assert "," in chip.inner_text()  # two bars selected, no modifier key needed
+    _click_bar(page, 3, 1)
+    page.wait_for_timeout(2500)
+    assert "," not in page.locator(f"{BAR} button:has-text('Per-endpoint middleware')").first.inner_text()
+    _click_bar(page, 3, 0)
+    page.wait_for_selector(f"{BAR} button:has-text('Per-endpoint middleware')", state="detached", timeout=15000)
 
 
 def test_every_chip_is_fully_visible_without_sideways_scrolling(page):

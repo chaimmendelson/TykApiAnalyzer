@@ -38,17 +38,28 @@ def test_no_selection_means_nothing_is_dimmed():
     from tyk_analyzer.charts import breakdown_figure
 
     (bar,) = breakdown_figure("T", ROWS[:3]).data
-    assert list(bar.marker.opacity) == [1.0, 1.0, 1.0]
+    assert all(c.endswith(", 1.0)") for c in bar.marker.color)
+    assert bar.marker.opacity is None  # a per-bar opacity array breaks click reporting
     (pie,) = pie_figure("T", ROWS[:3]).data
     assert all(c.endswith(", 1.0)") for c in pie.marker.colors)
 
 
 def test_selected_categories_stand_out_and_the_rest_are_dimmed():
-    from tyk_analyzer.charts import DIMMED_OPACITY, SELECTED, breakdown_figure
+    from tyk_analyzer.charts import DIMMED_OPACITY, breakdown_figure
 
     (bar,) = breakdown_figure("T", ROWS[:3], {"b"}).data
-    assert list(bar.marker.opacity) == [DIMMED_OPACITY, 1.0, DIMMED_OPACITY]
-    assert bar.marker.color[1] == SELECTED
+    alphas = [c.rsplit(", ", 1)[1].rstrip(")") for c in bar.marker.color]
+    assert alphas == [str(DIMMED_OPACITY), "1.0", str(DIMMED_OPACITY)]
+    assert bar.marker.color[1].startswith("rgba(224, 122, 47")  # SELECTED
     (pie,) = pie_figure("T", ROWS[:3], {"b"}).data
     alphas = [c.rsplit(", ", 1)[1].rstrip(")") for c in pie.marker.colors]
     assert alphas == [str(DIMMED_OPACITY), "1.0", str(DIMMED_OPACITY)]
+
+
+def test_bar_axes_cannot_be_dragged_or_zoomed():
+    from tyk_analyzer.charts import STATIC_CHART_CONFIG, breakdown_figure
+
+    fig = breakdown_figure("T", ROWS)
+    assert fig.layout.xaxis.fixedrange is True and fig.layout.yaxis.fixedrange is True
+    assert fig.layout.dragmode is False
+    assert STATIC_CHART_CONFIG["displayModeBar"] is False and STATIC_CHART_CONFIG["scrollZoom"] is False

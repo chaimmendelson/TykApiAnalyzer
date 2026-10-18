@@ -5,7 +5,7 @@ import logging
 import pandas as pd
 import streamlit as st
 
-from tyk_analyzer.charts import breakdown_figure, pie_figure, with_selected
+from tyk_analyzer.charts import STATIC_CHART_CONFIG, breakdown_figure, pie_figure, with_selected
 from tyk_analyzer.config import ConfigError, Settings, load_dotenv, load_settings, redact
 from tyk_analyzer.filters import (
     DIMENSIONS,
@@ -13,6 +13,7 @@ from tyk_analyzer.filters import (
     apply_selection,
     counts,
     counts_with_selection,
+    toggle,
 )
 from tyk_analyzer.model import ApiRecord, Snapshot
 from tyk_analyzer.snapshot import build_snapshot
@@ -62,30 +63,32 @@ def _widget_key(dim: str, name: str) -> str:
     return f"{name}_{dim}_{st.session_state.epochs[dim]}"
 
 
-def _point_label(point: dict) -> str | None:
-    """Category of a clicked bar (y) or pie slice (customdata or label)."""
-    for key in ("y", "customdata", "label"):
-        value = point.get(key)
-        if isinstance(value, list):
-            value = value[0] if value else None
-        if value is not None:
-            return str(value)
-    return None
+def _bar_chart_key(dim: str) -> str:
+    # The click counter is part of the key: each click remounts the chart so Plotly's own
+    # one-bar selection is forgotten and our toggled selection is the only source of truth.
+    clicks = st.session_state.setdefault("bar_clicks", {}).get(dim, 0)
+    return f"chart_{dim}_{st.session_state.epochs[dim]}_{clicks}"
 
 
-def _chart_selection(dim: str) -> set[str]:
-    state = st.session_state.get(_chart_key(dim))
+def _on_bar_click(dim: str) -> None:
+    """Toggle the clicked bar(s) in the dimension's selection (FR-006f)."""
+    state = st.session_state.get(_bar_chart_key(dim))
     try:
         points = state["selection"]["points"]
     except (TypeError, KeyError):
-        return set()
-    picked = {_point_label(p) for p in points}
-    picked.discard(None)
-    return picked
+        return
+    key = _widget_key(dim, "bars")
+    chosen = list(st.session_state.get(key) or [])
+    for point in points:
+        label = point.get("y")
+        if label is not None:
+            chosen = toggle(chosen, str(label))
+    st.session_state[key] = chosen
+    st.session_state["bar_clicks"][dim] = st.session_state["bar_clicks"].get(dim, 0) + 1
 
 
 def _current_selection(snapshot: Snapshot) -> dict[str, set[str]]:
-    selection = {d: _chart_selection(d) for d in BAR_DIMS}
+    selection = {d: set(st.session_state.get(_widget_key(d, "bars")) or []) for d in BAR_DIMS}
     for d in PIE_DIMS:
         selection[d] = set(st.session_state.get(_widget_key(d, "pill")) or [])
     selection["org"] = set(st.session_state.get(_widget_key("org", "orgpick"), []))
@@ -202,7 +205,7 @@ def _chart(records: list[ApiRecord], selection: dict[str, set[str]], dim: str, h
     if dim in PIE_DIMS:
         # Plotly pies cannot report clicks to Streamlit, so the name · count chips below the pie
         # are both the legend with the numbers and the filter control.
-        st.plotly_chart(pie_figure(TITLES[dim], rows, picked, height=height), key=_chart_key(dim), on_select="ignore", width="stretch")
+        st.plotly_chart(pie_figure(TITLES[dim], rows, picked, height=height), key=_chart_key(dim), on_select="ignore", width="stretch", config=STATIC_CHART_CONFIG)
         count_of = dict(with_selected(rows, picked))
         st.pills(
             TITLES[dim],
@@ -214,7 +217,14 @@ def _chart(records: list[ApiRecord], selection: dict[str, set[str]], dim: str, h
         )
     else:
         fig = breakdown_figure(TITLES[dim], rows, picked, height=height)
-        st.plotly_chart(fig, key=_chart_key(dim), on_select="rerun", selection_mode="points", width="stretch")
+        st.plotly_chart(
+            fig,
+            key=_bar_chart_key(dim),
+            on_select=lambda d=dim: _on_bar_click(d),
+            selection_mode="points",
+            width="stretch",
+            config=STATIC_CHART_CONFIG,
+        )
     if dim == "auth":
         st.caption("An API can use several methods, so counts may exceed the total.")
     if dim in MIDDLEWARE_DIMS:

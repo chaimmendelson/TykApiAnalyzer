@@ -75,3 +75,12 @@ def test_middleware_selection_matches_exactly_the_counted_apis():
     listed = {r.name for dim in ("mw_global", "mw_endpoint") for label, _ in counts(recs, dim)
               for r in apply_selection(recs, {dim: {label}})}
     assert "nothing-enabled" not in listed
+
+
+def test_toggle_adds_then_removes_a_category():
+    from tyk_analyzer.filters import toggle
+
+    assert toggle([], "Cache") == ["Cache"]
+    assert toggle(["Cache"], "CORS") == ["Cache", "CORS"]
+    assert toggle(["Cache", "CORS"], "Cache") == ["CORS"]
+    assert toggle(toggle([], "Cache"), "Cache") == []

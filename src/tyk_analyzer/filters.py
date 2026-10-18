@@ -61,3 +61,9 @@ def counts_with_selection(
 ) -> list[tuple[str, int]]:
     """Counts for one chart given the other dimensions' selections, so siblings stay visible."""
     return counts(apply_selection(records, selection, ignore=dimension), dimension)
+
+
+def toggle(selected: Iterable[str], label: str) -> list[str]:
+    """Add `label` when absent, remove it when present (FR-006f)."""
+    current = list(selected)
+    return [s for s in current if s != label] if label in current else current + [label]

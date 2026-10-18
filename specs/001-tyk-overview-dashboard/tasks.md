@@ -232,6 +232,14 @@ Single Python project with a `src/` layout: `src/tyk_analyzer/`, `tests/unit/`, 
 
 ---
 
+## Phase 16: Bar filtering and fixed charts (FR-006f, FR-006h)
+
+- [X] T074 Make charts fixed: `fixedrange` on both axes, `STATIC_CHART_CONFIG` (no mode bar, scroll zoom, double click or axis handles) on every chart; unit and browser tests that a drag and a wheel do not move the bars
+- [X] T076 Found with real mouse clicks (earlier tests used synthetic clicks that hid it): a per-bar `marker.opacity` array stops Plotly reporting bar clicks, so bar dimming now uses the colour's alpha; UI tests use real mouse clicks at the bar centre
+- [X] T075 Bar clicks toggle: `toggle()` in `filters.py`, an `on_select` callback that toggles the clicked category in `st.session_state` and remounts the chart (click counter in the chart key) so clicks add and remove without Shift; browser test for add, combine and remove
+
+---
+
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 **Purpose**: Packaging, security checks and validation across stories
