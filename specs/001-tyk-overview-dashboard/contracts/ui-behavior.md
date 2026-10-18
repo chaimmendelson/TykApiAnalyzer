@@ -4,9 +4,10 @@ The only external interface is the web page. This defines what it must show and 
 
 ## Layout (top to bottom)
 
-1. **Sticky top bar** (FR-006e), pinned while scrolling, one compact row: small title, **Refresh**
-   button with "Data loaded at <UTC time>", the **Organization** multiselect of every organization
-   (FR-006d; the only way to select an organization), and **Clear all** (disabled when nothing is
+1. **Sticky top bar** (FR-006e), pinned while scrolling, one compact row with a shared top edge and
+   a theme-matching background: small title with "Data loaded at <UTC time>" under it, the
+   **Organization** multiselect of every organization (FR-006d; the only way to select an organization),
+   **Refresh**, and **Clear all** (disabled when nothing is
    selected). A second thin line inside the bar shows one chip per selected category with a remove
    control; it is absent when nothing is selected. The bar never covers the first chart at the top.
 2. **Summary line**: one small line of text under the bar: total APIs, active, inactive, and the

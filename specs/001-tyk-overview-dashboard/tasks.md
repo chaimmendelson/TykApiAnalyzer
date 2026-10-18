@@ -197,6 +197,13 @@ Single Python project with a `src/` layout: `src/tyk_analyzer/`, `tests/unit/`, 
 
 ---
 
+## Phase 12: Top bar visual fixes and browser tests (FR-006e)
+
+- [X] T063 Fix the sticky bar found broken in a real browser: pin the layout wrapper (`[data-testid="stLayoutWrapper"]`), use the theme background from `st.context.theme.type`, one aligned row with the load time under the title
+- [X] T064 Add `tests/ui/test_topbar.py` (Playwright, opt-in via `UI_URL`): one row, theme background, stays pinned, does not cover the first chart, organization choice adds and clears a chip, in dark and light themes
+
+---
+
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 **Purpose**: Packaging, security checks and validation across stories

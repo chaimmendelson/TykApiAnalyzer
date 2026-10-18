@@ -97,16 +97,29 @@ def _clear(dims) -> None:
 
 _STICKY_CSS = """
 <style>
-.st-key-topbar {
-    position: sticky; top: 2.5rem; z-index: 999;
-    background: var(--background-color, #fff);
-    border-bottom: 1px solid rgba(128, 128, 128, 0.3);
-    padding: 0.25rem 0 0.4rem 0;
+/* Streamlit wraps keyed containers in a layout wrapper, and sticky only works on that wrapper. */
+[data-testid="stLayoutWrapper"]:has(> .st-key-topbar) {
+    position: sticky; top: 3.75rem; z-index: 999;
+    background: %(bg)s;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.35);
+    padding: 0.35rem 0;
 }
-.st-key-topbar [data-testid="stCaptionContainer"] { margin: 0; }
-.block-container { padding-top: 3rem; }
+.st-key-topbar [data-testid="stCaptionContainer"] { margin: 0; line-height: 1.1; }
+.st-key-topbar p { margin: 0; }
+.block-container { padding-top: 4rem; }
 </style>
 """
+
+_THEME_BACKGROUNDS = {"dark": "#0e1117", "light": "#ffffff"}
+
+
+def _sticky_css() -> str:
+    """Opaque bar background that matches the active Streamlit theme (no white box in dark mode)."""
+    try:
+        theme = st.context.theme.type
+    except (AttributeError, KeyError):
+        theme = None
+    return _STICKY_CSS % {"bg": _THEME_BACKGROUNDS.get(theme, "Canvas")}
 
 
 def _topbar(
@@ -115,27 +128,27 @@ def _topbar(
     snapshot: Snapshot | None,
     selection: dict[str, set[str]],
 ) -> None:
-    """Compact sticky bar: title, refresh, organization filter, clear all, chips (FR-006e)."""
+    """Compact sticky bar: title, organization filter, refresh, clear all, chips (FR-006e)."""
     with st.container(key="topbar"):
-        title, refresh, org, clear = st.columns([3, 3, 6, 1.3], vertical_alignment="center")
-        title.markdown("##### Tyk Configuration Analytics")
-        with refresh:
-            if st.button("Refresh", icon=":material/refresh:"):
-                _load(settings, config_error)
-                st.rerun()
+        title, org, refresh, clear = st.columns([3, 7, 1.2, 1.2], vertical_alignment="center")
+        with title:
+            st.markdown("**Tyk Configuration Analytics**")
             if snapshot:
                 st.caption(f"Data loaded at {snapshot.loaded_at:%Y-%m-%d %H:%M:%S} UTC")
-        if snapshot and snapshot.records:
+        if snapshot and snapshot.records and not st.session_state.error:
             with org:
                 _org_filter(snapshot.records)
             clear.button(
                 "Clear all",
-                type="primary",
                 disabled=not selection,
                 on_click=_clear,
                 args=(list(DIMENSIONS),),
                 key="clear_all_bar",
+                width="stretch",
             )
+        if refresh.button("Refresh", icon=":material/refresh:", width="stretch"):
+            _load(settings, config_error)
+            st.rerun()
         if selection:
             for col, (dim, values) in zip(st.columns(len(selection) + 1), selection.items(), strict=False):
                 col.button(
@@ -247,7 +260,7 @@ def main() -> None:
     except ConfigError as exc:
         settings, config_error = None, str(exc)
 
-    st.markdown(_STICKY_CSS, unsafe_allow_html=True)
+    st.markdown(_sticky_css(), unsafe_allow_html=True)
     if "snapshot" not in st.session_state:
         _load(settings, config_error)
     snapshot: Snapshot | None = st.session_state.get("snapshot")

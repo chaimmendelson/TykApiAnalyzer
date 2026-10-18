@@ -55,3 +55,14 @@ docker run --rm -p 8501:8501 -e MONGO_URI="$MONGO_URI" tyk-analyzer
 ```
 
 The container runs as a non-root user. Open http://localhost:8501.
+
+## Browser tests
+
+`tests/ui` drives the running dashboard with Playwright (sticky top bar, dark and light themes). It is
+skipped unless `UI_URL` is set:
+
+```bash
+pip install playwright pytest && playwright install chromium
+streamlit run src/tyk_analyzer/app.py &
+UI_URL=http://localhost:8501 pytest tests/ui   # UI_BROWSER_CHANNEL=chrome to use installed Chrome
+```
