@@ -7,6 +7,11 @@ import plotly.graph_objects as go
 BASE = "#4f7cac"
 SELECTED = "#e07a2f"
 BAR_HEIGHT = 28
+DIMMED_OPACITY = 0.35
+PIE_COLOURS = (
+    "#4f7cac", "#e07a2f", "#59a14f", "#b07aa1", "#edc948",
+    "#76b7b2", "#ff9da7", "#9c755f", "#bab0ac", "#e15759",
+)
 
 
 def with_selected(rows: list[tuple[str, int]], selected: Collection[str]) -> list[tuple[str, int]]:
@@ -26,12 +31,14 @@ def breakdown_figure(
     labels = [label for label, _ in rows]
     values = [n for _, n in rows]
     colors = [SELECTED if label in selected else BASE for label in labels]
+    # With a selection, unselected bars are dimmed so the selected ones stand out (FR-006g).
+    opacities = [1.0 if label in selected or not selected else DIMMED_OPACITY for label in labels]
     fig = go.Figure(
         go.Bar(
             x=values,
             y=labels,
             orientation="h",
-            marker_color=colors,
+            marker=dict(color=colors, opacity=opacities),
             text=values,
             textposition="outside",
             cliponaxis=False,
@@ -51,6 +58,11 @@ def breakdown_figure(
     return fig
 
 
+def _rgba(hex_colour: str, opacity: float) -> str:
+    r, g, b = (int(hex_colour[i : i + 2], 16) for i in (1, 3, 5))
+    return f"rgba({r}, {g}, {b}, {opacity})"
+
+
 def pie_figure(
     title: str,
     rows: list[tuple[str, int]],
@@ -61,6 +73,8 @@ def pie_figure(
     rows = [(label, n) for label, n in with_selected(rows, selected) if n > 0 or label in selected]
     labels = [label for label, _ in rows]
     values = [n for _, n in rows]
+    colours = [_rgba(PIE_COLOURS[i % len(PIE_COLOURS)], 1.0 if label in selected or not selected else DIMMED_OPACITY)
+               for i, label in enumerate(labels)]
     fig = go.Figure(
         go.Pie(
             labels=labels,
@@ -69,6 +83,7 @@ def pie_figure(
             text=labels,
             textinfo="text",
             textposition="auto",
+            marker=dict(colors=colours),
             sort=False,
             pull=[0.12 if label in selected else 0 for label in labels],
             hovertemplate="%{customdata}: %{value:,} APIs (%{percent})<extra></extra>",
@@ -80,6 +95,6 @@ def pie_figure(
         margin=dict(l=0, r=0, t=50, b=10),
         showlegend=False,
         uniformtext=dict(minsize=9, mode="hide"),
-        clickmode="event+select",
+        clickmode="event",
     )
     return fig

@@ -103,6 +103,40 @@ def test_clicking_a_chip_under_a_pie_filters_by_its_name(page):
     page.wait_for_selector(f"{BAR} button:has-text('✕')", state="detached", timeout=15000)
 
 
+def _chip(page, text):
+    return page.locator("[data-testid=stButtonGroup] button", has_text=text).first
+
+
+def test_chips_toggle_and_highlight_selected_categories(page):
+    chips = page.locator("[data-testid=stButtonGroup] button")
+    chips.first.wait_for(timeout=15000)
+    slices = "[data-testid=stPlotlyChart] g.slice path"
+    page.locator(slices).first.wait_for(timeout=15000)
+    fills = lambda: page.evaluate(
+        f"[...document.querySelectorAll('{slices}')].slice(0, 7).map(p => getComputedStyle(p).fillOpacity)"
+    )
+    assert not any(f == "0.35" for f in fills())  # nothing selected, nothing dimmed
+    _chip(page, "TCP").click()
+    page.locator(f"{BAR} button:has-text('✕')").first.wait_for(timeout=15000)
+    page.wait_for_timeout(1500)
+    assert sum(f == "0.35" for f in fills()) >= 1  # the unselected slices are dimmed
+    _chip(page, "TCP").click()  # clicking again removes it (FR-006f)
+    page.wait_for_selector(f"{BAR} button:has-text('✕')", state="detached", timeout=15000)
+    page.wait_for_timeout(1500)
+    assert not any(f == "0.35" for f in fills())
+
+
+def test_selecting_dims_the_unselected_bars(page):
+    page.locator("[data-testid=stPlotlyChart] .bars .point path").first.wait_for(timeout=15000)
+    page.locator("[data-testid=stPlotlyChart] .bars .point path").first.click(force=True)
+    page.wait_for_timeout(2500)
+    opacities = page.evaluate(
+        "[...document.querySelectorAll('[data-testid=stPlotlyChart] .bars .point path')]"
+        ".map(p => getComputedStyle(p).opacity)"
+    )
+    assert "1" in opacities and any(float(o) < 1 for o in opacities), opacities
+
+
 def test_every_chip_is_fully_visible_without_sideways_scrolling(page):
     clipped = page.evaluate(
         "[...document.querySelectorAll('[data-testid=stButtonGroup] > div')]"

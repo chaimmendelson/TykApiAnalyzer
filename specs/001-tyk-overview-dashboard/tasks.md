@@ -213,15 +213,15 @@ Single Python project with a `src/` layout: `src/tyk_analyzer/`, `tests/unit/`, 
 
 ## Phase 14: Better filtering (FR-006f, FR-006g)
 
-**Goal**: Clicking a pie slice toggles it; selected categories stand out in every chart; chips, slices and bars stay in sync.
+**Goal**: Chips and bars toggle; selected categories stand out and the rest are dimmed in every chart. Pie slices stay non-clickable by decision (a custom clickable SVG pie was built and then dropped at the user's request).
 
-- [ ] T067 [P] Add `tests/unit/test_pie_component.py` for pure helpers in a new `src/tyk_analyzer/pie.py`: `slice_geometry(rows)` returns per-slice start and end angles that sum to 360 degrees with a single 360 degree slice for one category, `toggle(selected, label)` adds when absent and removes when present, and the SVG builder escapes category names (no markup injection) and marks selected slices `data-selected="true"` and the others `data-dimmed="true"` only when something is selected
-- [ ] T068 Create `src/tyk_analyzer/pie.py` with those helpers plus a Streamlit Components v2 component (`st.components.v2.component`) that renders the pie as inline SVG: names on slices (hidden when the slice is too small, always in the hover title with count and percentage), click toggles via the component's state, selected slice pulled out, unselected dimmed to 35% opacity. No external scripts, no CDN. Depends on T067
-- [ ] T069 In `src/tyk_analyzer/app.py` use the component for `PIE_DIMS`, keeping the name · count chips as a second control bound to the same selection (one shared `st.session_state` key per dimension so slice and chip clicks stay in sync, cleared by the existing epoch mechanism). Depends on T068
-- [ ] T070 In `src/tyk_analyzer/charts.py` dim unselected bars (colour `BASE` at reduced opacity) whenever the chart has a selection and keep the selected bar at `SELECTED`; update `tests/unit/test_charts.py` for the bar colours and opacities
-- [ ] T071 Extend `tests/ui/test_topbar.py`: clicking a pie slice adds the matching chip to the top bar, clicking it again removes it, the chip row and the slice agree, unselected slices are dimmed and bars dimmed after a selection, in dark and light themes. Run the UI tests against a running server and look at screenshots of both themes before committing
+- [X] T067 Dropped: SVG pie helpers (built, tested and removed)
+- [X] T068 Dropped: custom Streamlit component for a clickable pie (removed)
+- [X] T069 Chips under each pie stay the pie's filter, toggling on click (`st.pills`, multi-select)
+- [X] T070 Dim unselected bars and unselected pie slices (35% opacity) while a chart has a selection; tests in `tests/unit/test_charts.py`
+- [X] T071 Browser tests in `tests/ui/test_topbar.py`: chip toggles on and off, unselected slices and bars dimmed, no dimming without a selection, in dark and light themes
 
-**Checkpoint**: click a slice, see it highlight and the table filter; click again, it clears.
+**Checkpoint**: click a chip, see the slice highlighted and the table filter; click again, it clears.
 
 ---
 
