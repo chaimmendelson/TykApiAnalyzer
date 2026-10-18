@@ -82,3 +82,30 @@ def test_choosing_an_organization_adds_a_chip_inside_the_bar(page):
     assert height < 130
     page.click(f"{BAR} button:has-text('Clear all')")
     page.wait_for_selector(f"{BAR} button:has-text('✕')", state="detached", timeout=15000)
+
+
+def test_pie_slices_show_names_and_the_chips_show_counts(page):
+    first = page.locator("[data-testid=stPlotlyChart]").first
+    first.locator("g.slice text").first.wait_for(timeout=15000)
+    slice_text = [t.strip() for t in first.locator("g.slice text").all_text_contents() if t.strip()]
+    assert slice_text and not any(t.replace(",", "").isdigit() for t in slice_text), slice_text
+    pills = page.locator("[data-testid=stButtonGroup] button").all_inner_texts()
+    assert pills and all("·" in t for t in pills), pills
+
+
+def test_clicking_a_chip_under_a_pie_filters_by_its_name(page):
+    page.locator("[data-testid=stButtonGroup] button").first.click()
+    chip = page.locator(f"{BAR} button:has-text('✕')").first
+    chip.wait_for(timeout=15000)
+    text = chip.inner_text()
+    assert text.startswith("API type: ") and "·" not in text, text
+    page.click(f"{BAR} button:has-text('Clear all')")
+    page.wait_for_selector(f"{BAR} button:has-text('✕')", state="detached", timeout=15000)
+
+
+def test_every_chip_is_fully_visible_without_sideways_scrolling(page):
+    clipped = page.evaluate(
+        "[...document.querySelectorAll('[data-testid=stButtonGroup] > div')]"
+        ".filter(d => d.scrollWidth > d.clientWidth + 1).length"
+    )
+    assert clipped == 0

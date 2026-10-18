@@ -57,7 +57,7 @@ def pie_figure(
     selected: Collection[str] = (),
     height: int | None = None,
 ) -> go.Figure:
-    """Pie chart labelled with counts. Click a slice to select its category."""
+    """Pie chart: slices show the name; counts are in the hover and in the chips under the pie."""
     rows = [(label, n) for label, n in with_selected(rows, selected) if n > 0 or label in selected]
     labels = [label for label, _ in rows]
     values = [n for _, n in rows]
@@ -66,17 +66,20 @@ def pie_figure(
             labels=labels,
             values=values,
             customdata=labels,
+            text=labels,
+            textinfo="text",
+            textposition="auto",
             sort=False,
             pull=[0.12 if label in selected else 0 for label in labels],
-            textinfo="value",
-            hovertemplate="%{label}: %{value} APIs<extra></extra>",
+            hovertemplate="%{customdata}: %{value:,} APIs (%{percent})<extra></extra>",
         )
     )
     fig.update_layout(
         title=dict(text=title, x=0),
         height=height or max(260, BAR_HEIGHT * min(len(rows), 10) + 120),
         margin=dict(l=0, r=0, t=50, b=10),
-        legend=dict(orientation="h", x=0, y=-0.05, yanchor="top"),
+        showlegend=False,
+        uniformtext=dict(minsize=9, mode="hide"),
         clickmode="event+select",
     )
     return fig

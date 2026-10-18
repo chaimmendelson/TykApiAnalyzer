@@ -5,7 +5,7 @@ import logging
 import pandas as pd
 import streamlit as st
 
-from tyk_analyzer.charts import breakdown_figure, pie_figure
+from tyk_analyzer.charts import breakdown_figure, pie_figure, with_selected
 from tyk_analyzer.config import ConfigError, Settings, load_dotenv, load_settings, redact
 from tyk_analyzer.filters import (
     DIMENSIONS,
@@ -85,7 +85,9 @@ def _chart_selection(dim: str) -> set[str]:
 
 
 def _current_selection(snapshot: Snapshot) -> dict[str, set[str]]:
-    selection = {d: _chart_selection(d) for d in CHART_DIMS}
+    selection = {d: _chart_selection(d) for d in BAR_DIMS}
+    for d in PIE_DIMS:
+        selection[d] = set(st.session_state.get(_widget_key(d, "pill")) or [])
     selection["org"] = set(st.session_state.get(_widget_key("org", "orgpick"), []))
     return {d: v for d, v in selection.items() if v}
 
@@ -106,6 +108,8 @@ _STICKY_CSS = """
 }
 .st-key-topbar [data-testid="stCaptionContainer"] { margin: 0; line-height: 1.1; }
 .st-key-topbar p { margin: 0; }
+/* st.pills scrolls sideways by default; let the name · count chips wrap so every category is reachable. */
+[data-testid="stButtonGroup"] > div { flex-wrap: wrap; overflow: visible; height: auto; }
 .block-container { padding-top: 4rem; }
 </style>
 """
@@ -198,9 +202,22 @@ def _summary(snapshot: Snapshot, shown: list[ApiRecord]) -> None:
 def _chart(records: list[ApiRecord], selection: dict[str, set[str]], dim: str, height: int) -> None:
     rows = counts_with_selection(records, selection, dim)
     picked = selection.get(dim, set())
-    draw = pie_figure if dim in PIE_DIMS else breakdown_figure
-    fig = draw(TITLES[dim], rows, picked, height=height)
-    st.plotly_chart(fig, key=_chart_key(dim), on_select="rerun", selection_mode="points", width="stretch")
+    if dim in PIE_DIMS:
+        # Plotly pies cannot report clicks to Streamlit, so the name · count chips below the pie
+        # are both the legend with the numbers and the filter control.
+        st.plotly_chart(pie_figure(TITLES[dim], rows, picked, height=height), key=_chart_key(dim), on_select="ignore", width="stretch")
+        count_of = dict(with_selected(rows, picked))
+        st.pills(
+            TITLES[dim],
+            list(count_of),
+            selection_mode="multi",
+            key=_widget_key(dim, "pill"),
+            format_func=lambda name: f"{name} · {count_of[name]:,}",
+            label_visibility="collapsed",
+        )
+    else:
+        fig = breakdown_figure(TITLES[dim], rows, picked, height=height)
+        st.plotly_chart(fig, key=_chart_key(dim), on_select="rerun", selection_mode="points", width="stretch")
     if dim == "auth":
         st.caption("An API can use several methods, so counts may exceed the total.")
     if dim in MIDDLEWARE_DIMS:

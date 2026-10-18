@@ -13,7 +13,9 @@ The only external interface is the web page. This defines what it must show and 
 2. **Summary line**: one small line of text under the bar: total APIs, active, inactive, and the
    coverage indicator ("N of M APIs have unclassified settings" with a reasons popover). It scrolls
    with the page.
-3. **Breakdown charts**: row 1 three equal-height pies (API type, Active state, Authentication);
+3. **Breakdown charts**: row 1 three equal-height pies (API type, Active state, Authentication) whose slices carry the
+   category name; a wrapping row of "Name · count" chips under each pie lists every category and is
+   the filter control (slices are not clickable; hover adds the percentage);
    row 2 two equal-height horizontal bar charts at half width each (Global middleware,
    Per-endpoint middleware) (FR-006c, FR-006d). Authentication and both middleware charts carry the
    note "An API can use several methods, so counts may exceed the total." (middleware charts:

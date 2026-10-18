@@ -204,6 +204,13 @@ Single Python project with a `src/` layout: `src/tyk_analyzer/`, `tests/unit/`, 
 
 ---
 
+## Phase 13: Pie labels and chip filters (FR-006c)
+
+- [X] T065 Pie slices show the category name; counts move to wrapping "Name · count" chips (`st.pills`, multi-select) under each pie, which also filter (selection key `_widget_key(dim, "pill")`); the Plotly legend is off
+- [X] T066 Extend `tests/ui/test_topbar.py`: slices carry names, chips carry counts, clicking a chip adds an "API type: <name>" chip, no chip row is clipped
+
+---
+
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 **Purpose**: Packaging, security checks and validation across stories
