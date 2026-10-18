@@ -1,7 +1,7 @@
 from datetime import UTC
 
 from tyk_analyzer.filters import counts
-from tyk_analyzer.model import ActiveState, ApiType, AuthMethod, OrgStatus
+from tyk_analyzer.model import ApiType, AuthMethod, OrgStatus
 from tyk_analyzer.snapshot import build_snapshot
 
 
@@ -9,16 +9,15 @@ def as_dict(rows):
     return dict(rows)
 
 
-def test_snapshot_contains_every_document_including_inactive(source, api_docs):
+def test_snapshot_contains_every_document(source, api_docs):
     snap = build_snapshot(source)
     assert len(snap.records) == len(api_docs) == 21
-    assert any(r.active is ActiveState.INACTIVE for r in snap.records)
     assert len({r.id for r in snap.records}) == 21
 
 
 def test_non_auth_dimensions_sum_to_total(source):
     snap = build_snapshot(source)
-    for dim in ("api_type", "org", "active"):
+    for dim in ("api_type", "org"):
         assert sum(n for _, n in counts(snap.records, dim)) == len(snap.records), dim
 
 
@@ -65,11 +64,6 @@ def test_organization_name_falls_back_to_slug_then_id(source):
     orgs = build_snapshot(source).organizations
     assert orgs["687a64bbcd28f000015d2515"].name == "acme"
     assert orgs["687a64bbcd28f000015d2516"].name == "687a64bbcd28f000015d2516"
-
-
-def test_active_counts(source):
-    active = as_dict(counts(build_snapshot(source).records, "active"))
-    assert active == {"Active": 18, "Inactive": 1, "Unknown": 2}
 
 
 def test_coverage(source):

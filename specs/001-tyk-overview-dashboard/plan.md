@@ -45,7 +45,7 @@ per-session snapshot; fetch only the fields needed (projection), never whole `oa
 | Principle | Status | How the plan satisfies it |
 |---|---|---|
 | I. Read-Only by Design | Pass | Source layer exposes only `find`-style reads; docs require a MongoDB user with the `read` role only; a test asserts no write method is reachable and an opt-in test asserts a read-only user is rejected on write. |
-| II. Useful High-Level Analytics | Pass | Overview of API type, authentication, middleware, organization, active state computed from stored data only. |
+| II. Useful High-Level Analytics | Pass | Overview of API type, authentication, middleware, organization computed from stored data only. |
 | III. Curated Semantics, Traceable Results | Pass | Explicit rules in `contracts/classification-rules.md`; each API carries the raw evidence behind its classification; unknown states are separate categories. |
 | IV. Focused Exploration | Pass | Fixed set of dimensions, no query box, no raw document browser; detail panel shows classification evidence only. |
 | V. Transparent Coverage | Pass | Coverage indicator counts APIs with "not understood" or "unmatched" values. |
@@ -82,7 +82,7 @@ src/tyk_analyzer/
 ├── __init__.py
 ├── config.py            # settings from environment; URI redaction
 ├── source.py            # ApiSource protocol + read-only MongoApiSource
-├── classify.py          # pure: api type, authentication, organization, active, coverage
+├── classify.py          # pure: api type, authentication, organization, coverage
 ├── snapshot.py          # build Snapshot (records + organizations + load time) from a source
 ├── filters.py           # AND-combined selections, per-dimension counts
 ├── charts.py            # Plotly figures from counts

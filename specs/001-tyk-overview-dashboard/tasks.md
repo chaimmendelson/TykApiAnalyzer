@@ -225,6 +225,13 @@ Single Python project with a `src/` layout: `src/tyk_analyzer/`, `tests/unit/`, 
 
 ---
 
+## Phase 15: Remove active state (user request)
+
+- [X] T072 Remove active state everywhere: `ActiveState`, `classify_active`, `ApiRecord.active`, the `active` projection field and filter dimension, the Active state pie, active/inactive summary counts, the Active table column and detail line; update tests; two pies now fill row 1
+- [X] T073 Update spec (FR-001, FR-001a removed, FR-006a, FR-006c, FR-006d), data model, contracts, research, quickstart and README to match
+
+---
+
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 **Purpose**: Packaging, security checks and validation across stories

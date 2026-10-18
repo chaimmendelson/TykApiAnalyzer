@@ -5,13 +5,12 @@ from collections.abc import Iterable, Mapping
 
 from tyk_analyzer.model import ApiRecord
 
-DIMENSIONS = ("api_type", "auth", "org", "active", "mw_global", "mw_endpoint")
+DIMENSIONS = ("api_type", "auth", "org", "mw_global", "mw_endpoint")
 
 TITLES = {
     "api_type": "API type",
     "auth": "Authentication",
     "org": "Organization",
-    "active": "Active state",
     "mw_global": "Global middleware",
     "mw_endpoint": "Per-endpoint middleware",
 }
@@ -25,8 +24,6 @@ def labels(record: ApiRecord, dimension: str) -> list[str]:
         return sorted(m.value for m in record.auth_methods)
     if dimension == "org":
         return [record.org_label]
-    if dimension == "active":
-        return [record.active.value]
     if dimension == "mw_global":
         return sorted(record.mw_global)
     if dimension == "mw_endpoint":

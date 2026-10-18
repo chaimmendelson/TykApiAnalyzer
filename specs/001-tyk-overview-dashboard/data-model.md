@@ -11,8 +11,6 @@ In-memory only. Nothing is persisted. Built once per refresh (the "snapshot").
 `REQUEST_SIGNATURE`, `CUSTOM_PLUGIN`, `EXTERNAL_OAUTH`, `NOT_SET`, `NOT_UNDERSTOOD`.
 An API has a non-empty set.
 
-**ActiveState**: `ACTIVE`, `INACTIVE`, `UNKNOWN`.
-
 ## ApiRecord (one per document in the APIs collection)
 
 | Field | Type | Source / rule |
@@ -20,7 +18,6 @@ An API has a non-empty set.
 | `id` | str | `_id` as string; unique identity |
 | `api_id` | str or None | `api_id` |
 | `name` | str | `name`, empty string if absent |
-| `active` | ActiveState | top-level `active` |
 | `api_type` | ApiType | contracts/classification-rules.md |
 | `tls_enabled` | bool | `protocol == "tls"`; only meaningful for TCP |
 | `auth_methods` | frozenset[AuthMethod] | contracts/classification-rules.md |
@@ -48,7 +45,7 @@ Relationship: `ApiRecord.org_id` references `Organization.id` (string comparison
 
 | Field | Type | Notes |
 |---|---|---|
-| `records` | list[ApiRecord] | all APIs, including inactive (FR-001) |
+| `records` | list[ApiRecord] | all APIs (FR-001) |
 | `organizations` | dict[str, Organization] | |
 | `loaded_at` | datetime (UTC) | shown to user (FR-010) |
 | `coverage` | Coverage | derived |
@@ -60,7 +57,7 @@ Relationship: `ApiRecord.org_id` references `Organization.id` (string comparison
 
 ## Selection (UI state)
 
-`dict[Dimension, set[str]]` over dimensions `api_type`, `auth`, `org`, `active`, `mw_global`, `mw_endpoint`. Within a
+`dict[Dimension, set[str]]` over dimensions `api_type`, `auth`, `org`, `mw_global`, `mw_endpoint`. Within a
 dimension, values OR; across dimensions, AND (FR-006a). Empty = no constraint.
 
 ## Breakdown (derived)

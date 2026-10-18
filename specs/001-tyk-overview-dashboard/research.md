@@ -8,7 +8,7 @@ APIs, 22 organizations) and Tyk's public documentation. No NEEDS CLARIFICATION i
 - **Decision**: Read `tyk_apis` (API definitions) and `tyk_organisations` (organizations) in the
   `tyk_analytics` database. Collection and database names are configurable.
 - **Rationale**: These are the Dashboard's own collections. API documents are flat: fields such as
-  `name`, `api_id`, `org_id`, `active`, `protocol`, `is_oas`, `graphql`, and the auth flags sit at
+  `name`, `api_id`, `org_id`, `protocol`, `is_oas`, `graphql`, and the auth flags sit at
   the top level, with an `oas_doc` object for OpenAPI-based definitions.
 - **Alternatives**: Tyk Dashboard REST API (rejected: constitution names MongoDB as the source and
   forbids relying on another service); Gateway API (rejected: only exposes loaded definitions).
@@ -74,9 +74,9 @@ Observed in the data (and consistent with Tyk docs) and decided:
 - **Alternatives**: Parse OAS `securitySchemes` plus `components.securitySchemes` types (rejected:
   extra branching with identical results in the observed data).
 
-## R5. Active state
+## R5. Active state (superseded)
 
-- **Decision**: Use top-level `active` (6,518 true, 1 false). Missing/non-boolean = "unknown".
+- **Decision**: Dropped. Active state is not shown or read any more (user request); all definitions are still counted.
 
 ## R6. Fetching efficiently
 

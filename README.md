@@ -1,7 +1,7 @@
 # Tyk API Analyzer
 
 A read-only dashboard that shows how Tyk is used across the API definitions stored in the Tyk
-Dashboard's MongoDB: API type, authentication method, organization and active state, with
+Dashboard's MongoDB: API type, authentication method, organization and middleware, with
 drill-down to the matching APIs and the evidence behind each classification.
 
 It never writes to MongoDB. Specifications and design notes are in

@@ -32,12 +32,6 @@ class AuthMethod(str, Enum):
     NOT_UNDERSTOOD = "Not understood"
 
 
-class ActiveState(str, Enum):
-    ACTIVE = "Active"
-    INACTIVE = "Inactive"
-    UNKNOWN = "Unknown"
-
-
 class OrgStatus(str, Enum):
     MATCHED = "matched"
     NOT_SET = "not set"
@@ -55,7 +49,6 @@ class ApiRecord:
     id: str
     api_id: str | None
     name: str
-    active: ActiveState
     api_type: ApiType
     tls_enabled: bool
     auth_methods: frozenset[AuthMethod]

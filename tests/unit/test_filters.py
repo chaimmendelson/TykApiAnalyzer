@@ -37,7 +37,7 @@ def test_authentication_selection_matches_any_of_an_apis_methods(source):
 def test_count_equals_rows_listed_when_selected(source):
     recs = build_snapshot(source).records
     other = {"org": {"perimeter"}}
-    for dim in ("api_type", "auth", "org", "active", "mw_global", "mw_endpoint"):
+    for dim in ("api_type", "auth", "org", "mw_global", "mw_endpoint"):
         for label, n in counts_with_selection(recs, other, dim):
             listed = apply_selection(recs, {**other, dim: {label}})
             assert len(listed) == n, (dim, label)
@@ -53,7 +53,7 @@ def test_own_dimension_selection_is_ignored_for_its_own_chart(source):
 
 def test_combination_matching_nothing_is_empty(source):
     recs = build_snapshot(source).records
-    assert apply_selection(recs, {"api_type": {"MCP"}, "active": {"Inactive"}}) == []
+    assert apply_selection(recs, {"api_type": {"MCP"}, "auth": {"Basic"}}) == []
 
 
 def test_selection_does_not_mutate_inputs(source):

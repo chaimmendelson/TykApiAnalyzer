@@ -8,7 +8,6 @@ from collections.abc import Mapping
 from typing import Any
 
 from tyk_analyzer.model import (
-    ActiveState,
     ApiRecord,
     ApiType,
     AuthMethod,
@@ -313,15 +312,6 @@ def classify_org(
     return f"{org_id} (unmatched)", OrgStatus.UNMATCHED, ["org_unmatched"]
 
 
-def classify_active(doc: Mapping[str, Any]) -> ActiveState:
-    value = doc.get("active")
-    if value is True:
-        return ActiveState.ACTIVE
-    if value is False:
-        return ActiveState.INACTIVE
-    return ActiveState.UNKNOWN
-
-
 def _clip(value: Any, limit: int = 120) -> str:
     text = "(absent)" if value is _ABSENT else str(value)
     return text if len(text) <= limit else text[: limit - 1] + "…"
@@ -332,7 +322,6 @@ def _evidence(doc: Mapping[str, Any]) -> dict[str, str]:
     ev: dict[str, str] = {
         "is_oas": _clip(doc.get("is_oas", _ABSENT)),
         "protocol": _clip(doc.get("protocol", _ABSENT)),
-        "active": _clip(doc.get("active", _ABSENT)),
         "org_id": _clip(doc.get("org_id", _ABSENT)),
     }
     gql = doc.get("graphql")
@@ -379,7 +368,6 @@ def classify_api(doc: Mapping[str, Any], organizations: Mapping[str, Organizatio
         id=str(doc.get("_id", "")),
         api_id=None if api_id is None else str(api_id),
         name="" if name is None else str(name),
-        active=classify_active(doc),
         api_type=api_type,
         tls_enabled=tls,
         auth_methods=methods,

@@ -20,7 +20,6 @@ API_PROJECTION: dict[str, int] = {
         "name",
         "api_id",
         "org_id",
-        "active",
         "protocol",
         "is_oas",
         "listen_port",

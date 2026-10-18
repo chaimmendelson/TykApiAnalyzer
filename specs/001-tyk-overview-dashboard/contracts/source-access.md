@@ -19,7 +19,7 @@ implementation fed from `tests/fixtures`.
 - Configuration (environment): `MONGO_URI` (required, secret), `MONGO_DB` (default
   `tyk_analytics`), `TYK_APIS_COLLECTION` (default `tyk_apis`), `TYK_ORGS_COLLECTION` (default
   `tyk_organisations`), `MONGO_TIMEOUT_MS` (default 5000).
-- Projection (APIs): `name`, `api_id`, `org_id`, `active`, `protocol`, `is_oas`, `listen_port`,
+- Projection (APIs): `name`, `api_id`, `org_id`, `protocol`, `is_oas`, `listen_port`,
   the auth flags listed in classification-rules.md, `external_oauth.enabled`,
   `graphql.enabled`, `graphql.execution_mode`, `graphql.supergraph.subgraphs`,
   `graphql.engine.data_sources`, and the OAS marker paths

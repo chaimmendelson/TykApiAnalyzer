@@ -20,7 +20,7 @@ from tyk_analyzer.source import MongoApiSource, SourceError
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
-PIE_DIMS = ("api_type", "active", "auth")
+PIE_DIMS = ("api_type", "auth")
 BAR_DIMS = ("mw_global", "mw_endpoint")
 PIE_HEIGHT = 340
 BAR_ROW_HEIGHT = 520
@@ -180,12 +180,9 @@ def _org_filter(records: list[ApiRecord]) -> None:
 def _summary(snapshot: Snapshot, shown: list[ApiRecord]) -> None:
     """One small line of text; scrolls with the page."""
     total = len(snapshot.records)
-    active = sum(1 for r in shown if r.active.value == "Active")
-    inactive = sum(1 for r in shown if r.active.value == "Inactive")
     cov = snapshot.coverage
     st.caption(
-        f"**{len(shown):,}** of {total:,} APIs · **{active:,}** active · **{inactive:,}** inactive · "
-        f"**{cov.unclassified_count:,}** unclassified"
+        f"**{len(shown):,}** of {total:,} APIs · **{cov.unclassified_count:,}** unclassified"
     )
     if cov.unclassified_count:
         with st.popover(f"{cov.unclassified_count:,} of {cov.total:,} APIs have unclassified settings"):
@@ -245,7 +242,6 @@ def _table(shown: list[ApiRecord]) -> None:
             "Name": [r.name for r in shown],
             "API type": [r.api_type.value for r in shown],
             "TLS": ["Yes" if r.tls_enabled else "" for r in shown],
-            "Active": [r.active.value for r in shown],
             "Authentication": [", ".join(sorted(m.value for m in r.auth_methods)) for r in shown],
             "Organization": [r.org_label for r in shown],
         }
@@ -260,8 +256,7 @@ def _table(shown: list[ApiRecord]) -> None:
         with st.container(border=True):
             st.markdown(f"**{rec.name or '(unnamed)'}** · `{rec.api_id or rec.id}`")
             st.write(
-                f"API type: **{rec.api_type.value}** · Active: **{rec.active.value}** · "
-                f"Organization: **{rec.org_label}**"
+                f"API type: **{rec.api_type.value}** · Organization: **{rec.org_label}**"
             )
             st.caption("Values the classification is based on:")
             st.table(pd.DataFrame({"Field": list(rec.evidence), "Value": list(rec.evidence.values())}).set_index("Field"))

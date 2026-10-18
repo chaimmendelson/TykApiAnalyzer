@@ -37,7 +37,7 @@ Expected for the local dataset (6,519 APIs):
 
 | Check | Expected |
 |---|---|
-| Total | 6,519 (6,518 active, 1 inactive) |
+| Total | 6,519 |
 | API type | REST classic 3,516; REST OpenAPI 2,000; GraphQL 250; UDG 251; Federation 1; MCP 1; TCP 500 |
 | TLS detail on TCP | 250 of 500 TCP APIs show TLS in the table; there is no TLS filter |
 | Authentication | none 3,761; API key 1,005; JWT 501; Basic 500; OAuth 2.0 251; mutual TLS 250; request signature 250; OpenID Connect 1 |

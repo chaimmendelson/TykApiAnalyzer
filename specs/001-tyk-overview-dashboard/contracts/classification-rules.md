@@ -52,10 +52,6 @@ Top-level flags, applied to classic and OpenAPI-based definitions alike (FR-003a
 | `org_id` equals an organization `id` | organization name | MATCHED |
 | otherwise | `<org_id> (unmatched)` | UNMATCHED (reason `org_unmatched`) |
 
-## Active state
-
-`active is True` → ACTIVE, `False` → INACTIVE, anything else → UNKNOWN.
-
 ## Coverage
 
 An API is unclassified when its type is NOT_UNDERSTOOD, its auth set contains NOT_UNDERSTOOD, or

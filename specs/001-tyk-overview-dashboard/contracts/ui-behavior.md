@@ -10,17 +10,17 @@ The only external interface is the web page. This defines what it must show and 
    **Refresh**, and **Clear all** (disabled when nothing is
    selected). A second thin line inside the bar shows one chip per selected category with a remove
    control; it is absent when nothing is selected. The bar never covers the first chart at the top.
-2. **Summary line**: one small line of text under the bar: total APIs, active, inactive, and the
+2. **Summary line**: one small line of text under the bar: total APIs, unclassified count, and the
    coverage indicator ("N of M APIs have unclassified settings" with a reasons popover). It scrolls
    with the page.
-3. **Breakdown charts**: row 1 three equal-height pies (API type, Active state, Authentication) whose slices carry the
+3. **Breakdown charts**: row 1 two equal-height pies at half width (API type, Authentication) whose slices carry the
    category name; a wrapping row of "Name · count" chips under each pie lists every category and is
    the filter control (slices are not clickable; hover adds the percentage);
    row 2 two equal-height horizontal bar charts at half width each (Global middleware,
    Per-endpoint middleware) (FR-006c, FR-006d). Authentication and both middleware charts carry the
    note "An API can use several methods, so counts may exceed the total." (middleware charts:
    "...several middleware...")
-4. **Matching APIs table**: name, API type, active state, authentication, organization, TLS (for
+4. **Matching APIs table**: name, API type, authentication, organization, TLS (for
    TCP). Selecting a middleware bar filters on that middleware. Shows "Showing N of M".
 6. **API detail**: selecting a row shows the evidence behind each classification (the raw field
    values used), not the full document.
