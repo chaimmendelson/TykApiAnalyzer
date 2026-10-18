@@ -211,6 +211,20 @@ Single Python project with a `src/` layout: `src/tyk_analyzer/`, `tests/unit/`, 
 
 ---
 
+## Phase 14: Better filtering (FR-006f, FR-006g)
+
+**Goal**: Clicking a pie slice toggles it; selected categories stand out in every chart; chips, slices and bars stay in sync.
+
+- [ ] T067 [P] Add `tests/unit/test_pie_component.py` for pure helpers in a new `src/tyk_analyzer/pie.py`: `slice_geometry(rows)` returns per-slice start and end angles that sum to 360 degrees with a single 360 degree slice for one category, `toggle(selected, label)` adds when absent and removes when present, and the SVG builder escapes category names (no markup injection) and marks selected slices `data-selected="true"` and the others `data-dimmed="true"` only when something is selected
+- [ ] T068 Create `src/tyk_analyzer/pie.py` with those helpers plus a Streamlit Components v2 component (`st.components.v2.component`) that renders the pie as inline SVG: names on slices (hidden when the slice is too small, always in the hover title with count and percentage), click toggles via the component's state, selected slice pulled out, unselected dimmed to 35% opacity. No external scripts, no CDN. Depends on T067
+- [ ] T069 In `src/tyk_analyzer/app.py` use the component for `PIE_DIMS`, keeping the name · count chips as a second control bound to the same selection (one shared `st.session_state` key per dimension so slice and chip clicks stay in sync, cleared by the existing epoch mechanism). Depends on T068
+- [ ] T070 In `src/tyk_analyzer/charts.py` dim unselected bars (colour `BASE` at reduced opacity) whenever the chart has a selection and keep the selected bar at `SELECTED`; update `tests/unit/test_charts.py` for the bar colours and opacities
+- [ ] T071 Extend `tests/ui/test_topbar.py`: clicking a pie slice adds the matching chip to the top bar, clicking it again removes it, the chip row and the slice agree, unselected slices are dimmed and bars dimmed after a selection, in dark and light themes. Run the UI tests against a running server and look at screenshots of both themes before committing
+
+**Checkpoint**: click a slice, see it highlight and the table filter; click again, it clears.
+
+---
+
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 **Purpose**: Packaging, security checks and validation across stories
