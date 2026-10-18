@@ -22,6 +22,7 @@ from tyk_analyzer.source import MongoApiSource, SourceError
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 PIE_DIMS = ("api_type", "auth")
+DROPDOWN_DIMS = ("org", "api_type", "auth", "mw_global", "mw_endpoint")
 BAR_DIMS = ("mw_global", "mw_endpoint")
 PIE_HEIGHT = 340
 BAR_ROW_HEIGHT = 520
@@ -70,6 +71,27 @@ def _bar_chart_key(dim: str) -> str:
     return f"chart_{dim}_{st.session_state.epochs[dim]}_{clicks}"
 
 
+def _sel_key(dim: str) -> str:
+    """The one stored selection per dimension; dropdown, chips and bar clicks all read and write it."""
+    return _widget_key(dim, "sel")
+
+
+def _selected(dim: str) -> list[str]:
+    return list(st.session_state.get(_sel_key(dim)) or [])
+
+
+def _sync_widget(dim: str, name: str) -> str:
+    """Point a widget's own state at the stored selection before it is drawn; returns its key."""
+    key = _widget_key(dim, name)
+    st.session_state[key] = _selected(dim)
+    return key
+
+
+def _store_from_widget(dim: str, name: str) -> None:
+    """on_change: a widget changed, so its value becomes the stored selection."""
+    st.session_state[_sel_key(dim)] = list(st.session_state.get(_widget_key(dim, name)) or [])
+
+
 def _on_bar_click(dim: str) -> None:
     """Toggle the clicked bar(s) in the dimension's selection (FR-006f)."""
     state = st.session_state.get(_bar_chart_key(dim))
@@ -77,8 +99,8 @@ def _on_bar_click(dim: str) -> None:
         points = state["selection"]["points"]
     except (TypeError, KeyError):
         return
-    key = _widget_key(dim, "bars")
-    chosen = list(st.session_state.get(key) or [])
+    key = _sel_key(dim)
+    chosen = _selected(dim)
     for point in points:
         label = point.get("y")
         if label is not None:
@@ -88,10 +110,7 @@ def _on_bar_click(dim: str) -> None:
 
 
 def _current_selection(snapshot: Snapshot) -> dict[str, set[str]]:
-    selection = {d: set(st.session_state.get(_widget_key(d, "bars")) or []) for d in BAR_DIMS}
-    for d in PIE_DIMS:
-        selection[d] = set(st.session_state.get(_widget_key(d, "pill")) or [])
-    selection["org"] = set(st.session_state.get(_widget_key("org", "orgpick"), []))
+    selection = {d: set(_selected(d)) for d in DIMENSIONS}
     return {d: v for d, v in selection.items() if v}
 
 
@@ -135,16 +154,15 @@ def _topbar(
     snapshot: Snapshot | None,
     selection: dict[str, set[str]],
 ) -> None:
-    """Compact sticky bar: title, organization filter, refresh, clear all, chips (FR-006e)."""
+    """Sticky bar: row 1 title, refresh, clear all; row 2 one dropdown per dimension; chips (FR-006i)."""
+    ready = bool(snapshot and snapshot.records and not st.session_state.error)
     with st.container(key="topbar"):
-        title, org, refresh, clear = st.columns([3, 7, 1.2, 1.2], vertical_alignment="center")
+        title, refresh, clear = st.columns([8, 1.3, 1.3], vertical_alignment="center")
         with title:
             st.markdown("**Tyk Configuration Analytics**")
             if snapshot:
                 st.caption(f"Data loaded at {snapshot.loaded_at:%Y-%m-%d %H:%M:%S} UTC")
-        if snapshot and snapshot.records and not st.session_state.error:
-            with org:
-                _org_filter(snapshot.records)
+        if ready:
             clear.button(
                 "Clear all",
                 disabled=not selection,
@@ -156,6 +174,10 @@ def _topbar(
         if refresh.button("Refresh", icon=":material/refresh:", width="stretch"):
             _load(settings, config_error)
             st.rerun()
+        if ready:
+            for col, dim in zip(st.columns(len(DROPDOWN_DIMS)), DROPDOWN_DIMS, strict=True):
+                with col:
+                    _dropdown(snapshot.records, dim)
         if selection:
             for col, (dim, values) in zip(st.columns(len(selection) + 1), selection.items(), strict=False):
                 col.button(
@@ -166,16 +188,27 @@ def _topbar(
                 )
 
 
-def _org_filter(records: list[ApiRecord]) -> None:
-    """Organization multiselect; the only way to select an organization (FR-006d)."""
-    totals = counts(records, "org")
+_PLACEHOLDERS = {
+    "org": "All organizations",
+    "api_type": "All API types",
+    "auth": "All authentication",
+    "mw_global": "All global middleware",
+    "mw_endpoint": "All per-endpoint middleware",
+}
+
+
+def _dropdown(records: list[ApiRecord], dim: str) -> None:
+    """Multiselect listing every category with its count in the source (FR-006i)."""
+    totals = counts(records, dim)
     count_of = dict(totals)
     st.multiselect(
-        "Organization",
+        TITLES[dim],
         [label for label, _ in totals],
-        key=_widget_key("org", "orgpick"),
+        key=_sync_widget(dim, "dropdown"),
+        on_change=_store_from_widget,
+        args=(dim, "dropdown"),
         format_func=lambda label: f"{label} ({count_of[label]:,})",
-        placeholder="All organizations",
+        placeholder=_PLACEHOLDERS[dim],
         label_visibility="collapsed",
     )
 
@@ -211,7 +244,9 @@ def _chart(records: list[ApiRecord], selection: dict[str, set[str]], dim: str, h
             TITLES[dim],
             list(count_of),
             selection_mode="multi",
-            key=_widget_key(dim, "pill"),
+            key=_sync_widget(dim, "pill"),
+            on_change=_store_from_widget,
+            args=(dim, "pill"),
             format_func=lambda name: f"{name} · {count_of[name]:,}",
             label_visibility="collapsed",
         )

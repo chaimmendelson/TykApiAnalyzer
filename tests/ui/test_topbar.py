@@ -42,12 +42,29 @@ def _wrapper_top(pg) -> float:
     return pg.evaluate(f"document.querySelector('{BAR}').parentElement.getBoundingClientRect().top")
 
 
-def test_bar_controls_are_in_one_row(page):
+def _boxes(page, selector):
+    return page.evaluate(
+        f"[...document.querySelectorAll('{selector}')].map(c => {{ const r = c.getBoundingClientRect();"
+        " return [Math.round(r.left), Math.round(r.top), Math.round(r.width)]; })"
+    )
+
+
+def test_five_dropdowns_share_one_row_of_equal_width(page):
+    boxes = _boxes(page, f"{BAR} [data-testid=stMultiSelect]")
+    assert len(boxes) == 5, boxes
+    assert len({top for _, top, _ in boxes}) == 1, boxes  # one row
+    widths = [w for _, _, w in boxes]
+    assert max(widths) - min(widths) <= 2, widths  # equal widths
+    labels = page.locator(f"{BAR} [data-testid=stMultiSelect] input").evaluate_all("els => els.map(e => e.placeholder)")
+    assert labels == ["All organizations", "All API types", "All authentication", "All global middleware", "All per-endpoint middleware"], labels
+
+
+def test_title_refresh_and_clear_share_the_first_row(page):
     tops = page.evaluate(
-        f"[...document.querySelectorAll('{BAR} [data-testid=stColumn]')].slice(0, 4)"
+        f"[...document.querySelectorAll('{BAR} [data-testid=stColumn]')].slice(0, 3)"
         ".map(c => Math.round(c.getBoundingClientRect().top))"
     )
-    assert len(tops) == 4 and len(set(tops)) == 1, tops
+    assert len(tops) == 3 and len(set(tops)) == 1, tops
 
 
 def test_bar_background_matches_the_theme(page):
@@ -60,7 +77,7 @@ def test_bar_background_matches_the_theme(page):
 def test_bar_stays_pinned_and_compact(page):
     before = _wrapper_top(page)
     height = page.evaluate(f"document.querySelector('{BAR}').parentElement.getBoundingClientRect().height")
-    assert height < 80
+    assert height < 130  # two compact rows
     page.mouse.move(700, 600)
     page.mouse.wheel(0, 1500)
     page.wait_for_timeout(800)
@@ -74,12 +91,12 @@ def test_bar_does_not_cover_the_first_chart(page):
 
 
 def test_choosing_an_organization_adds_a_chip_inside_the_bar(page):
-    page.click(f"{BAR} [data-testid=stMultiSelect] input")
-    page.click("[role=option] >> nth=0")
+    page.locator(f"{BAR} [data-testid=stMultiSelect]").first.locator("input").click()
+    page.locator("[role=option]").nth(1).click()  # nth(0) is "Select all"
     page.keyboard.press("Escape")
     page.wait_for_selector(f"{BAR} button:has-text('✕')", timeout=15000)
     height = page.evaluate(f"document.querySelector('{BAR}').parentElement.getBoundingClientRect().height")
-    assert height < 130
+    assert height < 190  # three lines with a chip
     page.click(f"{BAR} button:has-text('Clear all')")
     page.wait_for_selector(f"{BAR} button:has-text('✕')", state="detached", timeout=15000)
 
@@ -198,6 +215,46 @@ def test_clicking_bars_toggles_and_combines_the_selection(page):
     assert "," not in page.locator(f"{BAR} button:has-text('Per-endpoint middleware')").first.inner_text()
     _click_bar(page, 3, 0)
     page.wait_for_selector(f"{BAR} button:has-text('Per-endpoint middleware')", state="detached", timeout=15000)
+
+
+def _dropdown_tags(page, index):
+    text = page.locator(f"{BAR} [data-testid=stMultiSelect]").nth(index).evaluate("e => e.innerText")
+    return [t for t in text.splitlines() if "(" in t and ")" in t]  # tags read like "TCP (500)"
+
+
+def test_choosing_in_a_dropdown_highlights_the_chart_and_filters(page):
+    page.locator(f"{BAR} [data-testid=stMultiSelect]").nth(1).locator("input").click()
+    page.locator("[role=option]", has_text="TCP").first.click()
+    page.wait_for_timeout(500)  # let the selection register before closing the list
+    page.keyboard.press("Escape")
+    page.locator(f"{BAR} button:has-text('\u2715')").first.wait_for(timeout=15000)
+    page.wait_for_timeout(1500)
+    assert any("TCP" in t for t in _dropdown_tags(page, 1))
+    pressed = page.locator("[data-testid=stButtonGroup] button[aria-checked=true], [data-testid=stButtonGroup] button[aria-pressed=true]")
+    assert pressed.count() >= 1 and "TCP" in pressed.first.inner_text()  # the chip under the pie agrees
+    dimmed = page.evaluate(
+        "[...document.querySelectorAll('[data-testid=stPlotlyChart] g.slice path')].slice(0, 7)"
+        ".filter(p => getComputedStyle(p).fillOpacity === '0.35').length"
+    )
+    assert dimmed >= 1  # the pie dims the unselected slices
+
+
+def test_clicking_a_bar_shows_in_its_dropdown_and_clear_all_empties_everything(page):
+    chart = _bars(page, "global")
+    chart.locator(".bars .point path").first.wait_for(timeout=15000)
+    _click_bar(page, 2, 1)
+    page.wait_for_timeout(2500)
+    assert _dropdown_tags(page, 3), "global middleware dropdown should show the clicked bar"
+    page.click(f"{BAR} button:has-text('Clear all')")
+    page.wait_for_timeout(2500)
+    assert all(not _dropdown_tags(page, i) for i in range(5))
+    assert page.locator(f"{BAR} button:has-text('\u2715')").count() == 0
+
+
+def test_chip_selection_from_a_pie_appears_in_its_dropdown(page):
+    page.locator("[data-testid=stButtonGroup] button", has_text="JWT").first.click()
+    page.wait_for_timeout(2500)
+    assert any("JWT" in t for t in _dropdown_tags(page, 2))
 
 
 def test_every_chip_is_fully_visible_without_sideways_scrolling(page):
