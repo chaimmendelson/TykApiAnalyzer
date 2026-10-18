@@ -1,0 +1,23 @@
+[
+  {"_id": "a01", "api_id": "id-a01", "name": "rest-classic", "org_id": "687a64bbcd28f000015d2514", "active": true, "protocol": "", "is_oas": false, "use_keyless": true, "graphql": {"enabled": false, "execution_mode": ""}},
+  {"_id": "a02", "api_id": "id-a02", "name": "rest-oas", "org_id": "687a64bbcd28f000015d2514", "active": true, "is_oas": true, "use_standard_auth": true, "oas_doc": {"x-tyk-api-gateway": {"server": {"authentication": {"enabled": true}}}}},
+  {"_id": "a03", "api_id": "id-a03", "name": "graphql-proxy", "org_id": "687a64bbcd28f000015d2515", "active": true, "is_oas": false, "use_keyless": true, "graphql": {"enabled": true, "execution_mode": "proxyOnly"}},
+  {"_id": "a04", "api_id": "id-a04", "name": "udg", "org_id": "687a64bbcd28f000015d2515", "active": true, "is_oas": false, "enable_jwt": true, "graphql": {"enabled": true, "execution_mode": "executionEngine", "engine": {"data_sources": [{"kind": "REST"}]}}},
+  {"_id": "a05", "api_id": "id-a05", "name": "federation", "org_id": "687a64bbcd28f000015d2514", "active": true, "is_oas": false, "use_keyless": true, "graphql": {"enabled": true, "execution_mode": "proxyOnly", "supergraph": {"subgraphs": [{"id": "1"}]}}},
+  {"_id": "a06", "api_id": "id-a06", "name": "mcp", "org_id": "687a64bbcd28f000015d2514", "active": true, "is_oas": true, "use_standard_auth": true, "oas_doc": {"x-tyk-api-gateway": {"middleware": {"mcpTools": {"get_users": {}}}, "server": {"authentication": {"enabled": true}}}}},
+  {"_id": "a07", "api_id": "id-a07", "name": "streaming", "org_id": "687a64bbcd28f000015d2514", "active": true, "is_oas": true, "use_keyless": true, "oas_doc": {"x-tyk-streaming": {"streams": {}}}},
+  {"_id": "a08", "api_id": "id-a08", "name": "tcp", "org_id": "687a64bbcd28f000015d2515", "active": true, "protocol": "tcp", "is_oas": false, "use_keyless": true},
+  {"_id": "a09", "api_id": "id-a09", "name": "tls", "org_id": "687a64bbcd28f000015d2515", "active": true, "protocol": "tls", "is_oas": false, "use_mutual_tls_auth": true},
+  {"_id": "a10", "api_id": "id-a10", "name": "unknown-protocol", "org_id": "687a64bbcd28f000015d2514", "active": true, "protocol": "udp", "is_oas": false, "use_keyless": true},
+  {"_id": "a11", "api_id": "id-a11", "name": "graphql-disabled-with-mode", "org_id": "687a64bbcd28f000015d2514", "active": true, "protocol": "", "is_oas": false, "use_keyless": true, "graphql": {"enabled": false, "execution_mode": "proxyOnly"}},
+  {"_id": "a12", "api_id": "id-a12", "name": "bad-flags", "org_id": "687a64bbcd28f000015d2514", "active": "yes", "protocol": "", "is_oas": false, "use_keyless": "yes", "enable_jwt": "maybe"},
+  {"_id": "a13"},
+  {"_id": "a14", "api_id": "id-a14", "name": "multi-auth", "org_id": "687a64bbcd28f000015d2514", "active": true, "protocol": "", "is_oas": false, "use_standard_auth": true, "enable_jwt": true, "use_oauth2": true},
+  {"_id": "a15", "api_id": "id-a15", "name": "inactive", "org_id": "687a64bbcd28f000015d2515", "active": false, "protocol": "", "is_oas": false, "use_basic_auth": true},
+  {"_id": "a16", "api_id": "id-a16", "name": "oas-auth-mismatch", "org_id": "687a64bbcd28f000015d2514", "active": true, "is_oas": true, "use_keyless": true, "oas_doc": {"x-tyk-api-gateway": {"server": {"authentication": {"enabled": true}}}}},
+  {"_id": "a17", "api_id": "id-a17", "name": "unmatched-org", "org_id": "ffffffffffffffffffffffff", "active": true, "protocol": "", "is_oas": false, "use_keyless": true},
+  {"_id": "a18", "api_id": "id-a18", "name": "no-auth-flags", "org_id": "687a64bbcd28f000015d2515", "active": true, "protocol": "", "is_oas": false, "use_keyless": false, "enable_jwt": false},
+  {"_id": "a19", "api_id": "id-a19", "name": "rest-oas-keyless", "org_id": "687a64bbcd28f000015d2514", "active": true, "is_oas": true, "use_keyless": true, "oas_doc": {"x-tyk-api-gateway": {"server": {"authentication": {"enabled": false}}}}},
+  {"_id": "a20", "api_id": "id-a20", "name": "bad-types", "org_id": "687a64bbcd28f000015d2514", "active": true, "protocol": 5, "is_oas": "yes", "graphql": "oops", "use_keyless": true},
+  {"_id": "a21", "api_id": "id-a21", "name": "all-methods", "org_id": "687a64bbcd28f000015d2514", "active": true, "protocol": "", "is_oas": false, "use_openid": true, "enable_signature_checking": true, "use_go_plugin_auth": true, "external_oauth": {"enabled": true}}
+]
