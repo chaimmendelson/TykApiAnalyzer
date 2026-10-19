@@ -13,6 +13,7 @@ from tyk_analyzer.filters import (
     apply_selection,
     counts_with_selection,
     dropdown_options,
+    selection_summary,
     toggle,
 )
 from tyk_analyzer.model import ApiRecord, Snapshot
@@ -26,6 +27,7 @@ DROPDOWN_DIMS = ("org", "api_type", "auth", "mw_global", "mw_endpoint")
 BAR_DIMS = ("mw_global", "mw_endpoint")
 PIE_HEIGHT = 340
 TABLE_HEIGHT = 580
+DROPDOWN_LIST_HEIGHT = 300
 BAR_ROW_HEIGHT = 520
 CHART_DIMS = PIE_DIMS + BAR_DIMS
 MIDDLEWARE_DIMS = ("mw_global", "mw_endpoint")
@@ -193,29 +195,48 @@ def _topbar(
                     _dropdown(snapshot.records, selection, dim)
 
 
-_PLACEHOLDERS = {
-    "org": "All organizations",
-    "api_type": "All API types",
-    "auth": "All authentication",
-    "mw_global": "All global middleware",
-    "mw_endpoint": "All per-endpoint middleware",
+_NOUNS = {
+    "org": "organizations",
+    "api_type": "API types",
+    "auth": "authentication",
+    "mw_global": "global middleware",
+    "mw_endpoint": "per-endpoint middleware",
 }
 
 
+def _toggle_category(dim: str, label: str) -> None:
+    """on_change of a checkbox: add or remove that category in the stored selection (FR-006n)."""
+    st.session_state[_sel_key(dim)] = toggle(_selected(dim), label)
+
+
+def _clear_dropdown(dim: str) -> None:
+    """Clear button: untick everything in this dropdown only (no filter for the dimension)."""
+    st.session_state[_sel_key(dim)] = []
+
+
 def _dropdown(records: list[ApiRecord], selection: dict[str, set[str]], dim: str) -> None:
-    """Multiselect listing every category in a fixed order, its count following the other filters (FR-006j)."""
+    """Popup with a Clear button and a checkbox per category, counts following the other filters."""
     options = dropdown_options(records, selection, dim)
-    count_of = dict(options)
-    st.multiselect(
-        TITLES[dim],
-        [label for label, _ in options],
-        key=_sync_widget(dim, "dropdown"),
-        on_change=_store_from_widget,
-        args=(dim, "dropdown"),
-        format_func=lambda label: f"{label} ({count_of[label]:,})",
-        placeholder=_PLACEHOLDERS[dim],
-        label_visibility="collapsed",
-    )
+    chosen = set(_selected(dim))
+    with st.popover(selection_summary(_NOUNS[dim], chosen), width="stretch", key=f"popover_{dim}"):
+        st.button(
+            "Clear",
+            key=f"clear_{dim}_{st.session_state.epochs[dim]}",
+            on_click=_clear_dropdown,
+            args=(dim,),
+            disabled=not chosen,
+            width="stretch",
+        )
+        with st.container(height=min(DROPDOWN_LIST_HEIGHT, 40 * len(options) + 8), border=False):
+            for index, (label, count) in enumerate(options):
+                key = f"cb_{dim}_{st.session_state.epochs[dim]}_{index}"
+                st.session_state[key] = label in chosen
+                st.checkbox(
+                    f"{label} ({count:,})",
+                    key=key,
+                    on_change=_toggle_category,
+                    args=(dim, label),
+                )
 
 
 def _summary(snapshot: Snapshot, shown: list[ApiRecord]) -> None:

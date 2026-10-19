@@ -81,3 +81,14 @@ def dropdown_options(
     records = list(records)
     current = dict(counts_with_selection(records, selection, dimension))
     return [(label, current.get(label, 0)) for label, _ in counts(records, dimension)]
+
+
+def selection_summary(noun: str, selected: Iterable[str], width: int = 24) -> str:
+    """Text for a dropdown's opener: "All <noun>", the one chosen name, or "<n> selected"."""
+    chosen = sorted(selected)
+    if not chosen:
+        return f"All {noun}"
+    if len(chosen) > 1:
+        return f"{len(chosen)} selected"
+    name = chosen[0]
+    return name if len(name) <= width else name[: width - 1].rstrip() + "…"

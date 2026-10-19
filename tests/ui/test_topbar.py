@@ -69,14 +69,50 @@ def _showing(page):
     return int(text.split("Showing ")[1].split(" of")[0].replace(",", ""))
 
 
-def _option_labels(page, index):
-    """Open dropdown `index`, read its option labels, close it."""
-    page.locator(f"{BAR} [data-testid=stMultiSelect]").nth(index).locator("input").click()
-    page.wait_for_timeout(500)
-    labels = [t for t in page.locator("[role=option]").all_inner_texts() if t != "Select all"]
+OPENER = f"{BAR} [data-testid=stPopover]"
+BODY = "[data-testid=stPopoverBody]"
+BOX = f"{BODY} [data-testid=stCheckbox]"
+
+
+def _open(page, index):
+    page.locator(OPENER).nth(index).locator("button").first.click()
+    page.locator(BODY).first.wait_for(timeout=10000)
+    page.wait_for_timeout(400)
+
+
+def _close(page):
     page.keyboard.press("Escape")
     page.wait_for_timeout(300)
+    if page.locator(BODY).count():
+        page.mouse.click(5, 450)  # click outside, as a user would
+        page.wait_for_timeout(300)
+
+
+def _option_labels(page, index):
+    """Open dropdown `index`, read every checkbox label, close it."""
+    _open(page, index)
+    labels = [t.strip() for t in page.locator(BOX).all_inner_texts()]
+    _close(page)
     return labels
+
+
+def _dropdown_tags(page, index):
+    """The ticked categories of dropdown `index` (read by opening it)."""
+    _open(page, index)
+    ticked = page.evaluate(
+        f"[...document.querySelectorAll('{BOX}')].filter(c => c.querySelector('input').checked)"
+        ".map(c => c.innerText.trim())"
+    )
+    _close(page)
+    return ticked
+
+
+def _tick(page, index, text):
+    """Tick (or untick) the checkbox whose label starts with `text` in dropdown `index`."""
+    _open(page, index)
+    page.locator(BOX, has_text=text).first.click()
+    page.wait_for_timeout(1500)
+    _close(page)
 
 
 def _count_of(labels, name):
@@ -91,12 +127,12 @@ def _boxes(page, selector):
 
 
 def test_five_dropdowns_share_one_row_of_equal_width(page):
-    boxes = _boxes(page, f"{BAR} [data-testid=stMultiSelect]")
+    boxes = _boxes(page, OPENER)
     assert len(boxes) == 5, boxes
     assert len({top for _, top, _ in boxes}) == 1, boxes  # one row
     widths = [w for _, _, w in boxes]
     assert max(widths) - min(widths) <= 2, widths  # equal widths
-    labels = page.locator(f"{BAR} [data-testid=stMultiSelect] input").evaluate_all("els => els.map(e => e.placeholder)")
+    labels = [t.splitlines()[0] for t in page.locator(OPENER).all_inner_texts()]
     assert labels == ["All organizations", "All API types", "All authentication", "All global middleware", "All per-endpoint middleware"], labels
 
 
@@ -132,9 +168,7 @@ def test_bar_does_not_cover_the_first_chart(page):
 
 
 def test_choosing_an_organization_shows_in_its_dropdown_and_clear_all_resets(page):
-    page.locator(f"{BAR} [data-testid=stMultiSelect]").first.locator("input").click()
-    page.locator("[role=option]").nth(1).click()  # nth(0) is "Select all"
-    page.keyboard.press("Escape")
+    _tick(page, 0, "tmp-01")
     _wait_selected(page)
     assert _dropdown_tags(page, 0)
     height = page.evaluate(f"document.querySelector('{BAR}').parentElement.getBoundingClientRect().height")
@@ -252,16 +286,8 @@ def test_clicking_bars_toggles_and_combines_the_selection(page):
     _wait_selected(page, False)
 
 
-def _dropdown_tags(page, index):
-    text = page.locator(f"{BAR} [data-testid=stMultiSelect]").nth(index).evaluate("e => e.innerText")
-    return [t for t in text.splitlines() if "(" in t and ")" in t]  # tags read like "TCP (500)"
-
-
 def test_choosing_in_a_dropdown_highlights_the_chart_and_filters(page):
-    page.locator(f"{BAR} [data-testid=stMultiSelect]").nth(1).locator("input").click()
-    page.locator("[role=option]", has_text="TCP").first.click()
-    page.wait_for_timeout(500)  # let the selection register before closing the list
-    page.keyboard.press("Escape")
+    _tick(page, 1, "TCP")
     _wait_selected(page)
     assert any("TCP" in t for t in _dropdown_tags(page, 1))
     pressed = page.locator("[data-testid=stButtonGroup] button[aria-checked=true], [data-testid=stButtonGroup] button[aria-pressed=true]")
@@ -308,18 +334,13 @@ def test_there_is_no_chip_line_and_the_bar_stays_two_rows(page):
 
 def test_choosing_in_one_filter_adjusts_the_counts_in_the_others(page):
     before = {i: _option_labels(page, i) for i in range(5)}
-    page.locator(f"{BAR} [data-testid=stMultiSelect]").nth(1).locator("input").click()
-    page.locator("[role=option]", has_text="TCP").first.click()
-    page.wait_for_timeout(500)
-    page.keyboard.press("Escape")
+    _tick(page, 1, "TCP")
     _wait_selected(page)
     after = {i: _option_labels(page, i) for i in range(5)}
     names = lambda labels: [l.rsplit(" (", 1)[0] for l in labels]
     for i in range(5):
-        expected = [n for n in names(before[i]) if not (i == 1 and n == "TCP")]  # an open list hides the chosen one
-        assert names(after[i]) == expected, i  # every category stays listed, in the same order
-    tcp_tag = _dropdown_tags(page, 1)[0]
-    assert tcp_tag == "TCP (500)", tcp_tag  # a dimension ignores its own selection
+        assert names(after[i]) == names(before[i]), i  # every category stays listed, in the same order
+    assert _dropdown_tags(page, 1) == ["TCP (500)"]  # the ticked box stays visible; own selection ignored
     assert _count_of(after[1], "REST (classic)") == _count_of(before[1], "REST (classic)")
     assert _count_of(after[2], "None (keyless)") < _count_of(before[2], "None (keyless)")  # auth follows API type
     assert _showing(page) == 500
@@ -410,3 +431,55 @@ def test_the_pinned_bar_is_visible_on_both_tabs(page):
         _tab(page, name)
         top = page.evaluate(f"document.querySelector('{BAR}').parentElement.getBoundingClientRect().top")
         assert 0 <= top < 200, (name, top)
+
+
+def test_each_dropdown_has_checkboxes_and_a_clear_button_but_no_all(page):
+    for i in range(5):
+        _open(page, i)
+        assert page.locator(BOX).count() >= 2, i  # a checkbox on every line
+        assert page.locator(BODY).get_by_role("button", name="Clear").count() == 1, i
+        assert page.locator(BODY).get_by_role("button", name="All", exact=True).count() == 0, i
+        assert page.get_by_text("Select all").count() == 0, i
+        _close(page)
+
+
+def test_ticking_keeps_the_popup_open_and_the_box_visible_and_ticked(page):
+    _open(page, 1)
+    page.locator(BOX, has_text="TCP").first.click()
+    page.wait_for_timeout(2000)
+    assert page.locator(BODY).count() == 1  # still open after the rerun
+    page.locator(BOX, has_text="MCP").first.click()
+    page.wait_for_timeout(2000)
+    assert page.locator(BODY).count() == 1
+    ticked = page.evaluate(
+        f"[...document.querySelectorAll('{BOX}')].filter(c => c.querySelector('input').checked).map(c => c.innerText.trim())"
+    )
+    assert sorted(t.split(" (")[0] for t in ticked) == ["MCP", "TCP"], ticked
+    assert page.locator(OPENER).nth(1).inner_text().splitlines()[0] == "2 selected"
+    page.locator(BOX, has_text="TCP").first.click()  # unticking works the same way
+    page.wait_for_timeout(2000)
+    assert page.locator(OPENER).nth(1).inner_text().splitlines()[0] == "MCP"
+    _close(page)
+
+
+def test_clear_in_one_dropdown_leaves_the_others_alone(page):
+    _tick(page, 1, "TCP")
+    _tick(page, 2, "None")
+    _wait_selected(page)
+    _open(page, 1)
+    page.locator(BODY).get_by_role("button", name="Clear").click()
+    page.wait_for_timeout(2000)
+    _close(page)
+    assert not _dropdown_tags(page, 1)
+    assert _dropdown_tags(page, 2)  # authentication keeps its choice
+    _clear_all(page).click()
+    _wait_selected(page, False)
+    assert not _dropdown_tags(page, 2)
+
+
+def test_a_pie_chip_and_a_dropdown_checkbox_are_the_same_choice(page):
+    page.locator("[data-testid=stButtonGroup] button", has_text="JWT").first.click()
+    page.wait_for_timeout(2500)
+    assert any("JWT" in t for t in _dropdown_tags(page, 2))
+    _tick(page, 2, "JWT")  # unticking in the dropdown clears the pie chip too
+    _wait_selected(page, False)
