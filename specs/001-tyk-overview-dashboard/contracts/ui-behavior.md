@@ -6,9 +6,11 @@ The only external interface is the web page. This defines what it must show and 
 
 1. **Sticky top bar** (FR-006e, FR-006i, FR-006j), pinned while scrolling, two rows on a
    theme-matching background. Row 1: small title with "Data loaded at <UTC time>" under it,
-   **Refresh**, and **Clear all** (disabled when nothing is selected). Row 2: five equal multiselect
-   dropdowns (Organization, API type, Authentication, Global middleware, Per-endpoint middleware),
-   each listing every category as "<name> (<count>)" in a fixed order. Counts follow the other
+   **Refresh**, and **Clear all** (disabled when nothing is selected). Row 2: five equal dropdown
+   buttons (Organization, API type, Authentication, Global middleware, Per-endpoint middleware),
+   each showing a summary of its selection ("All API types", "TCP", "2 selected"). Opening one shows
+   a **Clear** button (no "All") above a scrollable list with a checkbox on every line, "<name>
+   (<count>)", every category in a fixed order, ticked ones included (FR-006n). Counts follow the other
    dropdowns' selections (a dropdown ignores its own) and show "(0)" when nothing matches. There is
    no chip line: selections are shown in the dropdowns. The bar never covers the first chart.
 2. **Summary line**: one small line of text under the bar: total APIs, unclassified count, and the
