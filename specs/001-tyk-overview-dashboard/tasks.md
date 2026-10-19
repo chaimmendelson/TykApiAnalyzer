@@ -289,6 +289,13 @@ Single Python project with a `src/` layout: `src/tyk_analyzer/`, `tests/unit/`, 
 
 ---
 
+## Phase 22: Calmer colours (FR-006m)
+
+- [X] T093 Add `.streamlit/config.toml` with `[theme.light]` and `[theme.dark]` teal `primaryColor` (a plain `[theme]` section would have switched off dark mode), copy it in the `Dockerfile`, set `SELECTED` in `charts.py` to the same teal and replace the pie palette with muted blues, greens and neutrals; update the unit test for the selected bar colour
+- [X] T094 Look at dark and light screenshots with selections in the filters, pies and bars and run the browser tests
+
+---
+
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 **Purpose**: Packaging, security checks and validation across stories

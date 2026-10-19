@@ -50,7 +50,7 @@ def test_selected_categories_stand_out_and_the_rest_are_dimmed():
     (bar,) = breakdown_figure("T", ROWS[:3], {"b"}).data
     alphas = [c.rsplit(", ", 1)[1].rstrip(")") for c in bar.marker.color]
     assert alphas == [str(DIMMED_OPACITY), "1.0", str(DIMMED_OPACITY)]
-    assert bar.marker.color[1].startswith("rgba(224, 122, 47")  # SELECTED
+    assert bar.marker.color[1].startswith("rgba(42, 143, 134")  # SELECTED (teal)
     (pie,) = pie_figure("T", ROWS[:3], {"b"}).data
     alphas = [c.rsplit(", ", 1)[1].rstrip(")") for c in pie.marker.colors]
     assert alphas == [str(DIMMED_OPACITY), "1.0", str(DIMMED_OPACITY)]

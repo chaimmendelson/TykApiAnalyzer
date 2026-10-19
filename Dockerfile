@@ -9,6 +9,7 @@ WORKDIR /app
 # Reproducible: exact versions from the lock file, then the package itself.
 COPY requirements.lock pyproject.toml ./
 COPY src ./src
+COPY .streamlit ./.streamlit
 RUN pip install -r requirements.lock && pip install --no-deps .
 
 RUN useradd --create-home --uid 10001 tyk

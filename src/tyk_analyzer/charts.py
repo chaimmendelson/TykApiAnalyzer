@@ -5,14 +5,14 @@ from collections.abc import Collection
 import plotly.graph_objects as go
 
 BASE = "#4f7cac"
-SELECTED = "#e07a2f"
+SELECTED = "#2a8f86"  # same teal as .streamlit/config.toml primaryColor
 BAR_HEIGHT = 28
 DIMMED_OPACITY = 0.35
 # Charts are for reading and clicking only: no pan, zoom, drag handles or toolbar.
 STATIC_CHART_CONFIG = {"displayModeBar": False, "scrollZoom": False, "doubleClick": False, "showAxisDragHandles": False}
-PIE_COLOURS = (
-    "#4f7cac", "#e07a2f", "#59a14f", "#b07aa1", "#edc948",
-    "#76b7b2", "#ff9da7", "#9c755f", "#bab0ac", "#e15759",
+PIE_COLOURS = (  # muted blues, greens and neutrals: nothing red or orange
+    "#4f7cac", "#7fa3c7", "#5f9ea0", "#9bb7a0", "#c9b27c",
+    "#a58fb3", "#8d9db6", "#b8a89a", "#6b8e9f", "#c4a1a1",
 )
 
 

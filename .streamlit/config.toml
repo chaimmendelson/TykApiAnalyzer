@@ -1,0 +1,8 @@
+# Calm teal accent for selected filters, buttons and tags (Streamlit's default is bright red).
+# Both themes are set so Streamlit keeps following the system light/dark preference.
+# Selected bars use the same teal (see SELECTED in src/tyk_analyzer/charts.py).
+[theme.light]
+primaryColor = "#2a8f86"
+
+[theme.dark]
+primaryColor = "#3aa89e"
