@@ -273,6 +273,12 @@ Single Python project with a `src/` layout: `src/tyk_analyzer/`, `tests/unit/`, 
 
 ---
 
+## Phase 20: Remove the TLS column
+
+- [X] T089 Remove the TLS column from the matching-APIs table in `src/tyk_analyzer/app.py`; TLS stays visible per API as the `protocol` value in the detail panel's evidence (FR-002a); update spec, quickstart and ui-behavior contract
+
+---
+
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 **Purpose**: Packaging, security checks and validation across stories

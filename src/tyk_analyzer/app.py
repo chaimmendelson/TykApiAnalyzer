@@ -278,7 +278,6 @@ def _table(shown: list[ApiRecord]) -> None:
         {
             "Name": [r.name for r in shown],
             "API type": [r.api_type.value for r in shown],
-            "TLS": ["Yes" if r.tls_enabled else "" for r in shown],
             "Authentication": [", ".join(sorted(m.value for m in r.auth_methods)) for r in shown],
             "Organization": [r.org_label for r in shown],
         }

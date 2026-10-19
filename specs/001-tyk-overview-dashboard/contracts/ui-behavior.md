@@ -22,7 +22,7 @@ The only external interface is the web page. This defines what it must show and 
    note "An API can use several methods, so counts may exceed the total." (middleware charts:
    "...several middleware...")
 4. **Matching APIs and detail, side by side** (FR-006k): left (about two thirds) the table with
-   name, API type, authentication, organization and TLS (for TCP), preceded by "Showing N of M";
+   name, API type, authentication and organization (no TLS column), preceded by "Showing N of M";
    right (about one third) the **API detail** panel, which stays in view while the table scrolls.
    Selecting a row fills the panel with the API's name and ID, API type, organization, any
    unclassified warnings and the evidence behind each classification (the raw field values used),
