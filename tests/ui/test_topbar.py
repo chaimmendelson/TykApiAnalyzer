@@ -483,3 +483,21 @@ def test_a_pie_chip_and_a_dropdown_checkbox_are_the_same_choice(page):
     assert any("JWT" in t for t in _dropdown_tags(page, 2))
     _tick(page, 2, "JWT")  # unticking in the dropdown clears the pie chip too
     _wait_selected(page, False)
+
+
+def test_clicking_any_cell_selects_its_row_without_a_checkbox_column(page):
+    box = _table_box(page)
+
+    def detail_title():
+        return page.locator(DETAIL).inner_text().splitlines()[0]
+
+    page.mouse.click(box["x"] + 330, box["y"] + 36 + 17)  # first row, the API type column
+    page.wait_for_timeout(2500)
+    first = detail_title()
+    assert "Select an API" not in first
+    page.mouse.click(box["x"] + 640, box["y"] + 36 + 17 + 35 * 3)  # fourth row, the Authentication column
+    page.wait_for_timeout(2500)
+    assert detail_title() != first  # a different row's API
+    page.mouse.click(box["x"] + 20, box["y"] + 36 + 17)  # first row, left edge: the Name column, not a checkbox
+    page.wait_for_timeout(2500)
+    assert detail_title() == first

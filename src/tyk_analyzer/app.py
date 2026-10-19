@@ -320,9 +320,11 @@ def _table(shown: list[ApiRecord]) -> None:
         )
         event = st.dataframe(
             df, hide_index=True, width="stretch", height=TABLE_HEIGHT,
-            on_select="rerun", selection_mode="single-row", key="api_table",
+            on_select="rerun", selection_mode="single-cell", key="api_table",
         )
-    rows = event.selection.rows if event and event.selection else []
+    # Clicking any cell selects its line (no checkbox column): the detail panel follows the cell's row.
+    cells = event.selection.cells if event and event.selection else []
+    rows = [cells[0][0]] if cells and cells[0][0] < len(shown) else []  # a stale row after filtering is ignored
     with right, st.container(key="detail", border=True):
         if rows:
             _detail(shown[rows[0]])

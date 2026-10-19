@@ -308,6 +308,12 @@ Single Python project with a `src/` layout: `src/tyk_analyzer/`, `tests/unit/`, 
 
 ---
 
+## Phase 24: Table without checkboxes
+
+- [X] T100 Replace the table's `single-row` selection (which adds a checkbox column) with `single-cell`: a click on any cell selects its row's API and fills the detail panel; ignore a stale row index after the filters change; browser test that clicking cells in two different rows and columns shows two different APIs and that no click is needed on the left edge
+
+---
+
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 **Purpose**: Packaging, security checks and validation across stories
