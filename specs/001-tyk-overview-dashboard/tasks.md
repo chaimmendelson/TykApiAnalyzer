@@ -314,6 +314,18 @@ Single Python project with a `src/` layout: `src/tyk_analyzer/`, `tests/unit/`, 
 
 ---
 
+## Phase 25: GitHub workflows and Docker Hub release (FR-017)
+
+- [ ] T101 Create `.github/workflows/test.yml`: triggers `push` (all branches) and `pull_request`; job `test` on `ubuntu-latest` with Python 3.12, installs `requirements.lock` plus `pip install -e . pytest ruff` (match `pyproject.toml` extras), runs `ruff check src tests` and `pytest -q`; a second job `docker-build` runs `docker/build-push-action` with `push: false` to prove the image builds. Use pinned major versions of the actions and `permissions: contents: read`
+- [ ] T102 Create `.github/workflows/release.yml`: trigger `release` with `types: [published]`; job 1 `test` calls the same lint and test steps (reuse via `workflow_call` in `test.yml`); job 2 `publish` needs `test`, logs in with `docker/login-action` using `secrets.DOCKERHUB_USERNAME` and `secrets.DOCKERHUB_TOKEN`, computes tags with `docker/metadata-action` from the release tag (`type=semver,pattern={{version}}`, `{{major}}.{{minor}}`, and `latest`), image `${{ secrets.DOCKERHUB_USERNAME }}/tyk-api-analyzer`, and pushes with `docker/build-push-action`; fail clearly with a message if the secrets are missing; never echo secrets
+- [ ] T103 Make `tests/unit` safe for CI: the suite must pass with no MongoDB and no `.env` (the integration and UI tests are already skipped without `MONGO_URI` / `UI_URL`); run the exact CI commands locally in a clean virtualenv to prove it
+- [ ] T104 Validate the workflows: lint them with `actionlint` (or `python -c "import yaml"` plus a structural check if actionlint is not available), push the branch and watch the test workflow run on GitHub (`gh run watch`), and fix failures. Do not create a release or push to Docker Hub during validation
+- [ ] T105 Document in `README.md`: how to add the two secrets (`gh secret set DOCKERHUB_USERNAME`, `gh secret set DOCKERHUB_TOKEN`, token created at Docker Hub > Account settings > Personal access tokens with Read & Write), how to cut a release (`gh release create vX.Y.Z --generate-notes`), the tags that are pushed, and that the version in `pyproject.toml` is informational for the image tag (the release tag decides)
+
+**Checkpoint**: pushes run the tests on GitHub; publishing release `vX.Y.Z` pushes `<username>/tyk-api-analyzer` with `X.Y.Z`, `X.Y` and `latest` to Docker Hub.
+
+---
+
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 **Purpose**: Packaging, security checks and validation across stories
