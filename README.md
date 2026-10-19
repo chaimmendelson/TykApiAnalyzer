@@ -66,3 +66,28 @@ pip install playwright pytest && playwright install chromium
 streamlit run src/tyk_analyzer/app.py &
 UI_URL=http://localhost:8501 pytest tests/ui   # UI_BROWSER_CHANNEL=chrome to use installed Chrome
 ```
+
+## CI and releases
+
+GitHub Actions (`.github/workflows`):
+
+- **CI** (`ci.yml`) runs on every push and pull request: `ruff`, the unit tests (no MongoDB needed; the
+  integration and browser tests skip themselves), and a Docker build that also checks the container runs
+  as a non-root user and reports healthy.
+- **Release** (`release.yml`) runs when you publish a GitHub release. It runs the same tests, then builds
+  a `linux/amd64` + `linux/arm64` image and pushes `chaimmendelson/tyk-api-analyzer` to Docker Hub as
+  `X.Y.Z`, `X.Y` and `latest` (a pre-release such as `v1.2.3-rc1` only gets its own tag).
+
+One-time setup: add the Docker Hub login as repository secrets (paste the values when prompted; a token
+comes from Docker Hub > Account settings > Personal access tokens, with Read & Write):
+
+```bash
+gh secret set DOCKERHUB_USERNAME -R chaimmendelson/TykApiAnalyzer
+gh secret set DOCKERHUB_TOKEN -R chaimmendelson/TykApiAnalyzer
+```
+
+Cut a release (the release tag decides the image tag; the version in `pyproject.toml` is informational):
+
+```bash
+gh release create v1.0.0 --generate-notes
+```
