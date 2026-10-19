@@ -21,10 +21,13 @@ The only external interface is the web page. This defines what it must show and 
    Per-endpoint middleware) (FR-006c, FR-006d). Authentication and both middleware charts carry the
    note "An API can use several methods, so counts may exceed the total." (middleware charts:
    "...several middleware...")
-4. **Matching APIs table**: name, API type, authentication, organization, TLS (for
-   TCP). Selecting a middleware bar filters on that middleware. Shows "Showing N of M".
-6. **API detail**: selecting a row shows the evidence behind each classification (the raw field
-   values used), not the full document.
+4. **Matching APIs and detail, side by side** (FR-006k): left (about two thirds) the table with
+   name, API type, authentication, organization and TLS (for TCP), preceded by "Showing N of M";
+   right (about one third) the **API detail** panel, which stays in view while the table scrolls.
+   Selecting a row fills the panel with the API's name and ID, API type, organization, any
+   unclassified warnings and the evidence behind each classification (the raw field values used),
+   not the full document. With no row selected it shows a short hint. On a narrow screen the panel
+   moves below the table.
 
 ## Interactions
 
