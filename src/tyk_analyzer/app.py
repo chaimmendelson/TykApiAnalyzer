@@ -25,6 +25,7 @@ PIE_DIMS = ("api_type", "auth")
 DROPDOWN_DIMS = ("org", "api_type", "auth", "mw_global", "mw_endpoint")
 BAR_DIMS = ("mw_global", "mw_endpoint")
 PIE_HEIGHT = 340
+TABLE_HEIGHT = 520
 BAR_ROW_HEIGHT = 520
 CHART_DIMS = PIE_DIMS + BAR_DIMS
 MIDDLEWARE_DIMS = ("mw_global", "mw_endpoint")
@@ -133,6 +134,18 @@ _STICKY_CSS = """
 /* st.pills scrolls sideways by default; let the name · count chips wrap so every category is reachable. */
 [data-testid="stButtonGroup"] > div { flex-wrap: wrap; overflow: visible; height: auto; }
 .block-container { padding-top: 4rem; }
+/* The detail panel stays in view under the sticky top bar while the table scrolls (FR-006k). The row
+   stretches so the panel's wrapper has room to stick; narrow screens stack it below the table. */
+[data-testid="stHorizontalBlock"]:has(.st-key-detail) { align-items: stretch; }
+[data-testid="stColumn"]:has(.st-key-detail) > [data-testid="stVerticalBlock"] { height: 100%%; }
+[data-testid="stLayoutWrapper"]:has(> .st-key-detail) {
+    position: sticky; top: 11rem; z-index: 5;
+    max-height: calc(100vh - 12rem); overflow-y: auto;
+    background: %(bg)s;
+}
+@media (max-width: 900px) {
+    [data-testid="stLayoutWrapper"]:has(> .st-key-detail) { position: static; max-height: none; }
+}
 </style>
 """
 
@@ -267,37 +280,43 @@ def _charts(snapshot: Snapshot, selection: dict[str, set[str]]) -> None:
 
 
 def _table(shown: list[ApiRecord]) -> None:
+    """Matching APIs: the table on the left, the selected API's details on the right (FR-006k)."""
     st.subheader("Matching APIs")
     if not shown:
         st.info("No matching APIs.")
         st.button("Clear all", on_click=_clear, args=(list(DIMENSIONS),), key="clear_nomatch")
         return
     total = len(st.session_state.snapshot.records)
-    st.caption(f"Showing {len(shown):,} of {total:,}")
-    df = pd.DataFrame(
-        {
-            "Name": [r.name for r in shown],
-            "API type": [r.api_type.value for r in shown],
-            "Authentication": [", ".join(sorted(m.value for m in r.auth_methods)) for r in shown],
-            "Organization": [r.org_label for r in shown],
-        }
-    )
-    event = st.dataframe(
-        df, hide_index=True, width="stretch", height=360,
-        on_select="rerun", selection_mode="single-row", key="api_table",
-    )
+    left, right = st.columns([2, 1])
+    with left:
+        st.caption(f"Showing {len(shown):,} of {total:,}")
+        df = pd.DataFrame(
+            {
+                "Name": [r.name for r in shown],
+                "API type": [r.api_type.value for r in shown],
+                "Authentication": [", ".join(sorted(m.value for m in r.auth_methods)) for r in shown],
+                "Organization": [r.org_label for r in shown],
+            }
+        )
+        event = st.dataframe(
+            df, hide_index=True, width="stretch", height=TABLE_HEIGHT,
+            on_select="rerun", selection_mode="single-row", key="api_table",
+        )
     rows = event.selection.rows if event and event.selection else []
-    if rows:
-        rec = shown[rows[0]]
-        with st.container(border=True):
-            st.markdown(f"**{rec.name or '(unnamed)'}** · `{rec.api_id or rec.id}`")
-            st.write(
-                f"API type: **{rec.api_type.value}** · Organization: **{rec.org_label}**"
-            )
-            st.caption("Values the classification is based on:")
-            st.table(pd.DataFrame({"Field": list(rec.evidence), "Value": list(rec.evidence.values())}).set_index("Field"))
-            if rec.unclassified:
-                st.warning("Unclassified: " + ", ".join(rec.unclassified))
+    with right, st.container(key="detail", border=True):
+        if rows:
+            _detail(shown[rows[0]])
+        else:
+            st.info("Select an API in the table to see its details.")
+
+
+def _detail(rec: ApiRecord) -> None:
+    st.markdown(f"**{rec.name or '(unnamed)'}** · `{rec.api_id or rec.id}`")
+    st.write(f"API type: **{rec.api_type.value}** · Organization: **{rec.org_label}**")
+    if rec.unclassified:
+        st.warning("Unclassified: " + ", ".join(rec.unclassified))
+    st.caption("Values the classification is based on:")
+    st.table(pd.DataFrame({"Field": list(rec.evidence), "Value": list(rec.evidence.values())}).set_index("Field"))
 
 
 def main() -> None:

@@ -319,3 +319,52 @@ def test_choosing_in_one_filter_adjusts_the_counts_in_the_others(page):
     _clear_all(page).click()
     _wait_selected(page, False)
     assert {i: _option_labels(page, i) for i in range(5)} == before  # counts restored
+
+
+DETAIL = ".st-key-detail"
+
+
+def _table_box(page):
+    table = page.locator("[data-testid=stDataFrame]").first
+    table.evaluate("e => e.scrollIntoView({block: 'start'})")
+    page.mouse.wheel(0, -150)  # leave room for the sticky bar above the table
+    page.wait_for_timeout(800)
+    return table.bounding_box()
+
+
+def _select_first_row(page):
+    box = _table_box(page)
+    page.mouse.click(box["x"] + 22, box["y"] + 36 + 17)  # the first row's checkbox, as a user would
+    page.wait_for_timeout(2500)
+
+
+def test_table_and_detail_panel_are_side_by_side_with_a_hint(page):
+    table = _table_box(page)
+    detail = page.locator(DETAIL).bounding_box()
+    assert detail["x"] >= table["x"] + table["width"], (table, detail)  # panel is to the right
+    assert table["width"] > detail["width"]  # about two thirds / one third
+    assert "Select an API in the table" in page.locator(DETAIL).inner_text()
+
+
+def test_selecting_a_row_fills_the_detail_panel(page):
+    _select_first_row(page)
+    text = page.locator(DETAIL).inner_text()
+    assert "API type:" in text and "Organization:" in text
+    assert "protocol" in text  # the classification evidence (TLS shows up here for TCP APIs)
+    assert "Select an API in the table" not in text
+
+
+def test_detail_panel_stays_in_view_and_clear_of_the_sticky_bar(page):
+    _select_first_row(page)
+    bar_bottom = page.evaluate(f"document.querySelector('{BAR}').parentElement.getBoundingClientRect().bottom")
+    page.mouse.move(700, 500)
+    page.mouse.wheel(0, 260)  # scroll the page so the table's top passes under the bar
+    page.wait_for_timeout(800)
+    top = page.locator(DETAIL).bounding_box()["y"]
+    assert top >= bar_bottom - 1, (top, bar_bottom)  # not hidden behind the bar
+    assert top < 400, top  # and still on screen, because it sticks
+
+
+def test_the_table_has_no_tls_column_and_no_inactive_state(page):
+    text = page.locator("[data-testid=stApp]").inner_text()
+    assert "TLS" not in text.replace("Mutual TLS", "")
