@@ -10,6 +10,7 @@ import os
 import pytest
 
 playwright = pytest.importorskip("playwright.sync_api")
+expect = playwright.expect
 
 URL = os.environ.get("UI_URL")
 pytestmark = pytest.mark.skipif(not URL, reason="UI_URL not set")
@@ -40,6 +41,38 @@ def page(request, browser):
 
 def _wrapper_top(pg) -> float:
     return pg.evaluate(f"document.querySelector('{BAR}').parentElement.getBoundingClientRect().top")
+
+
+def _clear_all(page):
+    return page.locator(f"{BAR} button", has_text="Clear all").first
+
+
+def _wait_selected(page, selected=True):
+    """Clear all is enabled exactly while something is selected (there is no chip line any more)."""
+    if selected:
+        expect(_clear_all(page)).to_be_enabled(timeout=15000)
+    else:
+        expect(_clear_all(page)).to_be_disabled(timeout=15000)
+    page.wait_for_timeout(800)
+
+
+def _showing(page):
+    text = page.locator("[data-testid=stApp]").inner_text()
+    return int(text.split("Showing ")[1].split(" of")[0].replace(",", ""))
+
+
+def _option_labels(page, index):
+    """Open dropdown `index`, read its option labels, close it."""
+    page.locator(f"{BAR} [data-testid=stMultiSelect]").nth(index).locator("input").click()
+    page.wait_for_timeout(500)
+    labels = [t for t in page.locator("[role=option]").all_inner_texts() if t != "Select all"]
+    page.keyboard.press("Escape")
+    page.wait_for_timeout(300)
+    return labels
+
+
+def _count_of(labels, name):
+    return next(int(l.rsplit("(", 1)[1].rstrip(")").replace(",", "")) for l in labels if l.startswith(name + " ("))
 
 
 def _boxes(page, selector):
@@ -90,15 +123,17 @@ def test_bar_does_not_cover_the_first_chart(page):
     assert chart >= bar
 
 
-def test_choosing_an_organization_adds_a_chip_inside_the_bar(page):
+def test_choosing_an_organization_shows_in_its_dropdown_and_clear_all_resets(page):
     page.locator(f"{BAR} [data-testid=stMultiSelect]").first.locator("input").click()
     page.locator("[role=option]").nth(1).click()  # nth(0) is "Select all"
     page.keyboard.press("Escape")
-    page.wait_for_selector(f"{BAR} button:has-text('✕')", timeout=15000)
+    _wait_selected(page)
+    assert _dropdown_tags(page, 0)
     height = page.evaluate(f"document.querySelector('{BAR}').parentElement.getBoundingClientRect().height")
-    assert height < 190  # three lines with a chip
-    page.click(f"{BAR} button:has-text('Clear all')")
-    page.wait_for_selector(f"{BAR} button:has-text('✕')", state="detached", timeout=15000)
+    assert height < 130  # still two rows: no chip line
+    _clear_all(page).click()
+    _wait_selected(page, False)
+    assert not _dropdown_tags(page, 0)
 
 
 def test_pie_slices_show_names_and_the_chips_show_counts(page):
@@ -111,13 +146,14 @@ def test_pie_slices_show_names_and_the_chips_show_counts(page):
 
 
 def test_clicking_a_chip_under_a_pie_filters_by_its_name(page):
+    total = _showing(page)
     page.locator("[data-testid=stButtonGroup] button").first.click()
-    chip = page.locator(f"{BAR} button:has-text('✕')").first
-    chip.wait_for(timeout=15000)
-    text = chip.inner_text()
-    assert text.startswith("API type: ") and "·" not in text, text
-    page.click(f"{BAR} button:has-text('Clear all')")
-    page.wait_for_selector(f"{BAR} button:has-text('✕')", state="detached", timeout=15000)
+    _wait_selected(page)
+    assert _showing(page) < total
+    assert _dropdown_tags(page, 1)  # API type dropdown shows the same choice
+    _clear_all(page).click()
+    _wait_selected(page, False)
+    assert _showing(page) == total
 
 
 def _chip(page, text):
@@ -134,12 +170,10 @@ def test_chips_toggle_and_highlight_selected_categories(page):
     )
     assert not any(f == "0.35" for f in fills())  # nothing selected, nothing dimmed
     _chip(page, "TCP").click()
-    page.locator(f"{BAR} button:has-text('✕')").first.wait_for(timeout=15000)
-    page.wait_for_timeout(1500)
+    _wait_selected(page)
     assert sum(f == "0.35" for f in fills()) >= 1  # the unselected slices are dimmed
     _chip(page, "TCP").click()  # clicking again removes it (FR-006f)
-    page.wait_for_selector(f"{BAR} button:has-text('✕')", state="detached", timeout=15000)
-    page.wait_for_timeout(1500)
+    _wait_selected(page, False)
     assert not any(f == "0.35" for f in fills())
 
 
@@ -166,10 +200,6 @@ def _click_bar(page, chart_index, bar_index):
     bar = page.locator("[data-testid=stPlotlyChart]").nth(chart_index).locator(".bars .point path").nth(bar_index)
     box = bar.bounding_box()
     page.mouse.click(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
-
-
-def _bar_chips(page):
-    return page.locator(f"{BAR} button:has-text('\u2715')")
 
 
 def test_bar_charts_cannot_be_moved_and_have_no_toolbar(page):
@@ -200,21 +230,18 @@ def test_bar_charts_cannot_be_moved_and_have_no_toolbar(page):
 
 def test_clicking_bars_toggles_and_combines_the_selection(page):
     chart = _bars(page, "endpoint")
-    points = chart.locator(".bars .point path")
-    points.first.wait_for(timeout=15000)
+    chart.locator(".bars .point path").first.wait_for(timeout=15000)
     _click_bar(page, 3, 0)
-    _bar_chips(page).first.wait_for(timeout=15000)
-    assert _bar_chips(page).first.inner_text().startswith("Per-endpoint middleware: ")
-    page.wait_for_timeout(1500)
+    _wait_selected(page)
+    assert len(_dropdown_tags(page, 4)) == 1
     _click_bar(page, 3, 1)
-    page.wait_for_timeout(2500)
-    chip = page.locator(f"{BAR} button:has-text('Per-endpoint middleware')").first
-    assert "," in chip.inner_text()  # two bars selected, no modifier key needed
+    page.wait_for_timeout(2000)
+    assert len(_dropdown_tags(page, 4)) == 2  # two bars selected, no modifier key needed
     _click_bar(page, 3, 1)
-    page.wait_for_timeout(2500)
-    assert "," not in page.locator(f"{BAR} button:has-text('Per-endpoint middleware')").first.inner_text()
+    page.wait_for_timeout(2000)
+    assert len(_dropdown_tags(page, 4)) == 1
     _click_bar(page, 3, 0)
-    page.wait_for_selector(f"{BAR} button:has-text('Per-endpoint middleware')", state="detached", timeout=15000)
+    _wait_selected(page, False)
 
 
 def _dropdown_tags(page, index):
@@ -227,8 +254,7 @@ def test_choosing_in_a_dropdown_highlights_the_chart_and_filters(page):
     page.locator("[role=option]", has_text="TCP").first.click()
     page.wait_for_timeout(500)  # let the selection register before closing the list
     page.keyboard.press("Escape")
-    page.locator(f"{BAR} button:has-text('\u2715')").first.wait_for(timeout=15000)
-    page.wait_for_timeout(1500)
+    _wait_selected(page)
     assert any("TCP" in t for t in _dropdown_tags(page, 1))
     pressed = page.locator("[data-testid=stButtonGroup] button[aria-checked=true], [data-testid=stButtonGroup] button[aria-pressed=true]")
     assert pressed.count() >= 1 and "TCP" in pressed.first.inner_text()  # the chip under the pie agrees
@@ -245,10 +271,9 @@ def test_clicking_a_bar_shows_in_its_dropdown_and_clear_all_empties_everything(p
     _click_bar(page, 2, 1)
     page.wait_for_timeout(2500)
     assert _dropdown_tags(page, 3), "global middleware dropdown should show the clicked bar"
-    page.click(f"{BAR} button:has-text('Clear all')")
-    page.wait_for_timeout(2500)
+    _clear_all(page).click()
+    _wait_selected(page, False)
     assert all(not _dropdown_tags(page, i) for i in range(5))
-    assert page.locator(f"{BAR} button:has-text('\u2715')").count() == 0
 
 
 def test_chip_selection_from_a_pie_appears_in_its_dropdown(page):
@@ -263,3 +288,34 @@ def test_every_chip_is_fully_visible_without_sideways_scrolling(page):
         ".filter(d => d.scrollWidth > d.clientWidth + 1).length"
     )
     assert clipped == 0
+
+
+def test_there_is_no_chip_line_and_the_bar_stays_two_rows(page):
+    page.locator("[data-testid=stButtonGroup] button", has_text="TCP").first.click()
+    _wait_selected(page)
+    assert page.locator(f"{BAR} button:has-text('\u2715')").count() == 0
+    height = page.evaluate(f"document.querySelector('{BAR}').parentElement.getBoundingClientRect().height")
+    assert height < 130, height
+
+
+def test_choosing_in_one_filter_adjusts_the_counts_in_the_others(page):
+    before = {i: _option_labels(page, i) for i in range(5)}
+    page.locator(f"{BAR} [data-testid=stMultiSelect]").nth(1).locator("input").click()
+    page.locator("[role=option]", has_text="TCP").first.click()
+    page.wait_for_timeout(500)
+    page.keyboard.press("Escape")
+    _wait_selected(page)
+    after = {i: _option_labels(page, i) for i in range(5)}
+    names = lambda labels: [l.rsplit(" (", 1)[0] for l in labels]
+    for i in range(5):
+        expected = [n for n in names(before[i]) if not (i == 1 and n == "TCP")]  # an open list hides the chosen one
+        assert names(after[i]) == expected, i  # every category stays listed, in the same order
+    tcp_tag = _dropdown_tags(page, 1)[0]
+    assert tcp_tag == "TCP (500)", tcp_tag  # a dimension ignores its own selection
+    assert _count_of(after[1], "REST (classic)") == _count_of(before[1], "REST (classic)")
+    assert _count_of(after[2], "None (keyless)") < _count_of(before[2], "None (keyless)")  # auth follows API type
+    assert _showing(page) == 500
+    assert any(l.endswith("(0)") for i in (3, 4) for l in after[i])  # nothing matches: stays listed as (0)
+    _clear_all(page).click()
+    _wait_selected(page, False)
+    assert {i: _option_labels(page, i) for i in range(5)} == before  # counts restored

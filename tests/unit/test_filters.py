@@ -84,3 +84,33 @@ def test_toggle_adds_then_removes_a_category():
     assert toggle(["Cache"], "CORS") == ["Cache", "CORS"]
     assert toggle(["Cache", "CORS"], "Cache") == ["CORS"]
     assert toggle(toggle([], "Cache"), "Cache") == []
+
+
+def test_dropdown_options_list_every_category_in_a_fixed_order(source):
+    from tyk_analyzer.filters import dropdown_options
+
+    recs = build_snapshot(source).records
+    base = dropdown_options(recs, {}, "api_type")
+    assert [n for n, _ in base] == [n for n, _ in counts(recs, "api_type")]
+    filtered = dropdown_options(recs, {"auth": {"JWT"}}, "api_type")
+    assert [n for n, _ in filtered] == [n for n, _ in base]  # order never changes with the selection
+    assert any(c == 0 for _, c in filtered)  # categories with no match stay listed with 0
+
+
+def test_dropdown_counts_follow_the_other_dimensions_and_ignore_the_own_one(source):
+    from tyk_analyzer.filters import dropdown_options
+
+    recs = build_snapshot(source).records
+    selection = {"auth": {"JWT"}, "api_type": {"MCP"}}
+    for dim in ("api_type", "auth", "org", "mw_global", "mw_endpoint"):
+        others = {d: v for d, v in selection.items() if d != dim}
+        for label, n in dropdown_options(recs, selection, dim):
+            assert n == len(apply_selection(recs, {**others, dim: {label}})), (dim, label)
+
+
+def test_a_selected_category_with_no_matches_stays_listed_with_zero(source):
+    from tyk_analyzer.filters import dropdown_options
+
+    recs = build_snapshot(source).records
+    got = dict(dropdown_options(recs, {"auth": {"JWT"}, "api_type": {"MCP"}}, "api_type"))
+    assert got["MCP"] == 0 and "MCP" in got

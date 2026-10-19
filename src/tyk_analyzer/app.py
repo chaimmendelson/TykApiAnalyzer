@@ -11,8 +11,8 @@ from tyk_analyzer.filters import (
     DIMENSIONS,
     TITLES,
     apply_selection,
-    counts,
     counts_with_selection,
+    dropdown_options,
     toggle,
 )
 from tyk_analyzer.model import ApiRecord, Snapshot
@@ -154,7 +154,7 @@ def _topbar(
     snapshot: Snapshot | None,
     selection: dict[str, set[str]],
 ) -> None:
-    """Sticky bar: row 1 title, refresh, clear all; row 2 one dropdown per dimension; chips (FR-006i)."""
+    """Sticky bar: row 1 title, refresh, clear all; row 2 one dropdown per dimension (FR-006i)."""
     ready = bool(snapshot and snapshot.records and not st.session_state.error)
     with st.container(key="topbar"):
         title, refresh, clear = st.columns([8, 1.3, 1.3], vertical_alignment="center")
@@ -177,15 +177,7 @@ def _topbar(
         if ready:
             for col, dim in zip(st.columns(len(DROPDOWN_DIMS)), DROPDOWN_DIMS, strict=True):
                 with col:
-                    _dropdown(snapshot.records, dim)
-        if selection:
-            for col, (dim, values) in zip(st.columns(len(selection) + 1), selection.items(), strict=False):
-                col.button(
-                    f"{TITLES[dim]}: {', '.join(sorted(values))} ✕",
-                    key=f"chip_{dim}_{st.session_state.epochs[dim]}",
-                    on_click=_clear,
-                    args=([dim],),
-                )
+                    _dropdown(snapshot.records, selection, dim)
 
 
 _PLACEHOLDERS = {
@@ -197,13 +189,13 @@ _PLACEHOLDERS = {
 }
 
 
-def _dropdown(records: list[ApiRecord], dim: str) -> None:
-    """Multiselect listing every category with its count in the source (FR-006i)."""
-    totals = counts(records, dim)
-    count_of = dict(totals)
+def _dropdown(records: list[ApiRecord], selection: dict[str, set[str]], dim: str) -> None:
+    """Multiselect listing every category in a fixed order, its count following the other filters (FR-006j)."""
+    options = dropdown_options(records, selection, dim)
+    count_of = dict(options)
     st.multiselect(
         TITLES[dim],
-        [label for label, _ in totals],
+        [label for label, _ in options],
         key=_sync_widget(dim, "dropdown"),
         on_change=_store_from_widget,
         args=(dim, "dropdown"),

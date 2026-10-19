@@ -67,3 +67,17 @@ def toggle(selected: Iterable[str], label: str) -> list[str]:
     """Add `label` when absent, remove it when present (FR-006f)."""
     current = list(selected)
     return [s for s in current if s != label] if label in current else current + [label]
+
+
+def dropdown_options(
+    records: Iterable[ApiRecord], selection: Selection, dimension: str
+) -> list[tuple[str, int]]:
+    """Every category of a dimension in a fixed order, with counts that follow the other filters.
+
+    The order is by count over all records (then name), so it never changes while filtering. Counts
+    come from the other dimensions' selections (the dimension's own is ignored), and are 0 when no
+    API matches, so a count equals the rows listed after choosing that category (FR-006j).
+    """
+    records = list(records)
+    current = dict(counts_with_selection(records, selection, dimension))
+    return [(label, current.get(label, 0)) for label, _ in counts(records, dimension)]
