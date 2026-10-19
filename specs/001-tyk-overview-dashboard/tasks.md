@@ -279,6 +279,16 @@ Single Python project with a `src/` layout: `src/tyk_analyzer/`, `tests/unit/`, 
 
 ---
 
+## Phase 21: Overview and APIs tabs, aligned boxes (FR-006l)
+
+- [ ] T090 In `src/tyk_analyzer/app.py` wrap the page body in `overview, apis = st.tabs(["Overview", "APIs"])` below the top bar and summary line: charts in the Overview tab, `_table` in the APIs tab. Remove the "Matching APIs" subheader (the tab is the heading) and move the "Showing N of M" caption above `st.columns([2, 1])` so the table and the detail container start at the same height. Keep the empty states ("No matching APIs", error banner, zero APIs) outside or above the tabs
+- [ ] T091 Make the table use the screen height: set `TABLE_HEIGHT` from a CSS-free approach (a fixed height that fits a 900 px window after the pinned bar, for example 600) and cap the detail panel's `max-height` to match; the sticky detail rule offset must still sit just below the pinned bar
+- [ ] T092 Update `tests/ui/test_topbar.py` for the tabs: charts are only looked for after the Overview tab is selected (default), the table and detail tests click the APIs tab first (`page.get_by_role("tab", name="APIs")`), plus new checks: both tabs exist and Overview is selected by default; filters chosen on Overview are still applied after switching to APIs and back (dropdown tags and "Showing N of M"); the table's top edge equals the detail panel's top edge (within 2 px); the pinned bar stays visible on both tabs; run dark and light and look at screenshots of both tabs before committing
+
+**Checkpoint**: Overview shows the charts, APIs shows the aligned table and detail, and filters carry over.
+
+---
+
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 **Purpose**: Packaging, security checks and validation across stories

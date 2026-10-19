@@ -14,16 +14,18 @@ The only external interface is the web page. This defines what it must show and 
 2. **Summary line**: one small line of text under the bar: total APIs, unclassified count, and the
    coverage indicator ("N of M APIs have unclassified settings" with a reasons popover). It scrolls
    with the page.
-3. **Breakdown charts**: row 1 two equal-height pies at half width (API type, Authentication) whose slices carry the
+3. **Two tabs** (FR-006l) under the top bar and the summary line: **Overview** and **APIs**. Filters
+   are shared and kept when switching tabs.
+   - **Overview tab, breakdown charts**: row 1 two equal-height pies at half width (API type, Authentication) whose slices carry the
    category name; a wrapping row of "Name · count" chips under each pie lists every category and is
    the filter control (slices are not clickable; hover adds the percentage);
    row 2 two equal-height horizontal bar charts at half width each (Global middleware,
    Per-endpoint middleware) (FR-006c, FR-006d). Authentication and both middleware charts carry the
    note "An API can use several methods, so counts may exceed the total." (middleware charts:
    "...several middleware...")
-4. **Matching APIs and detail, side by side** (FR-006k): left (about two thirds) the table with
-   name, API type, authentication and organization (no TLS column), preceded by "Showing N of M";
-   right (about one third) the **API detail** panel, which stays in view while the table scrolls.
+   - **APIs tab, table and detail side by side** (FR-006k): "Showing N of M" above both columns; left
+   (about two thirds) the table with name, API type, authentication and organization (no TLS column),
+   using the available screen height; right (about one third) the **API detail** panel, which stays in view while the table scrolls.
    Selecting a row fills the panel with the API's name and ID, API type, organization, any
    unclassified warnings and the evidence behind each classification (the raw field values used),
    not the full document. With no row selected it shows a short hint. On a narrow screen the panel
