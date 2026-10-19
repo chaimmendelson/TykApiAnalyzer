@@ -22,7 +22,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]  # "." lets tests import `tests.conftest` under a bare `pytest` too
 
 [tool.ruff]
 line-length = 100
