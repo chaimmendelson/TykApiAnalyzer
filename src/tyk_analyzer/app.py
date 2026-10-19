@@ -25,7 +25,7 @@ PIE_DIMS = ("api_type", "auth")
 DROPDOWN_DIMS = ("org", "api_type", "auth", "mw_global", "mw_endpoint")
 BAR_DIMS = ("mw_global", "mw_endpoint")
 PIE_HEIGHT = 340
-TABLE_HEIGHT = 520
+TABLE_HEIGHT = 580
 BAR_ROW_HEIGHT = 520
 CHART_DIMS = PIE_DIMS + BAR_DIMS
 MIDDLEWARE_DIMS = ("mw_global", "mw_endpoint")
@@ -281,15 +281,14 @@ def _charts(snapshot: Snapshot, selection: dict[str, set[str]]) -> None:
 
 def _table(shown: list[ApiRecord]) -> None:
     """Matching APIs: the table on the left, the selected API's details on the right (FR-006k)."""
-    st.subheader("Matching APIs")
     if not shown:
         st.info("No matching APIs.")
         st.button("Clear all", on_click=_clear, args=(list(DIMENSIONS),), key="clear_nomatch")
         return
     total = len(st.session_state.snapshot.records)
+    st.caption(f"Showing {len(shown):,} of {total:,}")  # above both columns so their tops line up
     left, right = st.columns([2, 1])
     with left:
-        st.caption(f"Showing {len(shown):,} of {total:,}")
         df = pd.DataFrame(
             {
                 "Name": [r.name for r in shown],
@@ -345,8 +344,11 @@ def main() -> None:
 
     shown = apply_selection(snapshot.records, selection)
     _summary(snapshot, shown)
-    _charts(snapshot, selection)
-    _table(shown)
+    overview, apis = st.tabs(["Overview", "APIs"])  # one set of filters above both (FR-006l)
+    with overview:
+        _charts(snapshot, selection)
+    with apis:
+        _table(shown)
 
 
 main()

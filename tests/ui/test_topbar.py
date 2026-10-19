@@ -56,8 +56,16 @@ def _wait_selected(page, selected=True):
     page.wait_for_timeout(800)
 
 
+def _tab(page, name):
+    page.get_by_role("tab", name=name).click()
+    page.wait_for_timeout(700)
+
+
 def _showing(page):
+    """The 'Showing N of M' count lives in the APIs tab; read it there and come back to Overview."""
+    _tab(page, "APIs")
     text = page.locator("[data-testid=stApp]").inner_text()
+    _tab(page, "Overview")
     return int(text.split("Showing ")[1].split(" of")[0].replace(",", ""))
 
 
@@ -325,6 +333,7 @@ DETAIL = ".st-key-detail"
 
 
 def _table_box(page):
+    _tab(page, "APIs")
     table = page.locator("[data-testid=stDataFrame]").first
     table.evaluate("e => e.scrollIntoView({block: 'start'})")
     page.mouse.wheel(0, -150)  # leave room for the sticky bar above the table
@@ -366,5 +375,38 @@ def test_detail_panel_stays_in_view_and_clear_of_the_sticky_bar(page):
 
 
 def test_the_table_has_no_tls_column_and_no_inactive_state(page):
+    _tab(page, "APIs")
     text = page.locator("[data-testid=stApp]").inner_text()
     assert "TLS" not in text.replace("Mutual TLS", "")
+
+
+def test_two_tabs_with_overview_first(page):
+    tabs = page.get_by_role("tab")
+    assert tabs.all_inner_texts() == ["Overview", "APIs"]
+    assert page.get_by_role("tab", name="Overview").get_attribute("aria-selected") == "true"
+    assert page.locator("[data-testid=stPlotlyChart]").first.is_visible()  # charts are on Overview
+
+
+def test_filters_stay_applied_when_switching_tabs(page):
+    total = _showing(page)
+    page.locator("[data-testid=stButtonGroup] button", has_text="TCP").first.click()
+    _wait_selected(page)
+    _tab(page, "APIs")
+    assert _showing(page) == 500 < total  # the table follows the filter chosen on Overview
+    assert _dropdown_tags(page, 1)  # the pinned bar still shows it on the APIs tab
+    _tab(page, "Overview")
+    assert _dropdown_tags(page, 1)
+
+
+def test_table_and_detail_start_at_the_same_height(page):
+    _table_box(page)
+    table = page.locator("[data-testid=stDataFrame]").first.bounding_box()["y"]
+    detail = page.locator(DETAIL).bounding_box()["y"]
+    assert abs(table - detail) <= 2, (table, detail)
+
+
+def test_the_pinned_bar_is_visible_on_both_tabs(page):
+    for name in ("Overview", "APIs"):
+        _tab(page, name)
+        top = page.evaluate(f"document.querySelector('{BAR}').parentElement.getBoundingClientRect().top")
+        assert 0 <= top < 200, (name, top)
